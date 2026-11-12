@@ -21,9 +21,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Delete
@@ -31,12 +31,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -48,6 +49,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -96,7 +98,6 @@ fun HomeScreen(
     onNavigateToEditWork: (WorkEntry) -> Unit
 ) {
     val context = LocalContext.current
-    val isHindi by viewModel.isHindi.collectAsState()
     val ownerName by viewModel.ownerName.collectAsState()
     val tractorModel by viewModel.tractorModel.collectAsState()
     val ownerPhone by viewModel.ownerPhone.collectAsState()
@@ -104,6 +105,7 @@ fun HomeScreen(
     val todayEntries by viewModel.todayEntries.collectAsState()
     val summary by viewModel.dashboardSummary.collectAsState()
 
+    var showDatePickerDialog by remember { mutableStateOf(false) }
     var selectedEntryForOptions by remember { mutableStateOf<WorkEntry?>(null) }
     var entryToDelete by remember { mutableStateOf<WorkEntry?>(null) }
 
@@ -151,7 +153,7 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.Bottom
                     ) {
                         Text(
-                            text = if (isHindi) "नमस्ते, $ownerName 🌾" else "Welcome, $ownerName 🌾",
+                            text = "Welcome, $ownerName 🌾",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
@@ -185,7 +187,7 @@ fun HomeScreen(
                                     modifier = Modifier.size(32.dp).testTag("prev_day_btn")
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.ArrowBackIosNew,
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
                                         contentDescription = "Prev Day",
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
@@ -194,9 +196,9 @@ fun HomeScreen(
 
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.clickable {
-                                        viewModel.setSelectedDate(System.currentTimeMillis())
-                                    }
+                                    modifier = Modifier
+                                        .clickable { showDatePickerDialog = true }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CalendarMonth,
@@ -206,7 +208,7 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = FormatUtils.formatDateWithDay(selectedDateMillis, isHindi),
+                                        text = FormatUtils.formatDateWithDay(selectedDateMillis),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
@@ -218,7 +220,7 @@ fun HomeScreen(
                                             shape = RoundedCornerShape(10.dp)
                                         ) {
                                             Text(
-                                                text = LocaleHelper.getString("today", isHindi),
+                                                text = "Today",
                                                 color = Color.White,
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 10.sp,
@@ -233,7 +235,7 @@ fun HomeScreen(
                                     modifier = Modifier.size(32.dp).testTag("next_day_btn")
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.ArrowForwardIos,
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                                         contentDescription = "Next Day",
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
@@ -249,7 +251,7 @@ fun HomeScreen(
             item {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = LocaleHelper.getString("today_summary", isHindi),
+                        text = "Today's Work Summary",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1B5E20)
@@ -272,7 +274,7 @@ fun HomeScreen(
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Text(
-                                    text = LocaleHelper.getString("total_hours", isHindi),
+                                    text = "Work Hours",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = Color.Gray,
                                         fontWeight = FontWeight.Medium
@@ -280,7 +282,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = FormatUtils.formatDuration(summary.totalWorkingMinutes, isHindi),
+                                    text = FormatUtils.formatDuration(summary.totalWorkingMinutes),
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = TractorGreenPrimary,
@@ -289,7 +291,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "${summary.totalWorkEntriesCount} ${LocaleHelper.getString("work_entries_count", isHindi)}",
+                                    text = "${summary.totalWorkEntriesCount} Entries",
                                     style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
                                 )
                             }
@@ -304,7 +306,7 @@ fun HomeScreen(
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Text(
-                                    text = LocaleHelper.getString("total_earnings", isHindi),
+                                    text = "Total Earnings",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = Color.Gray,
                                         fontWeight = FontWeight.Medium
@@ -321,7 +323,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "${summary.totalCustomersServed} ${LocaleHelper.getString("customers_served", isHindi)}",
+                                    text = "${summary.totalCustomersServed} Customers",
                                     style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
                                 )
                             }
@@ -344,7 +346,7 @@ fun HomeScreen(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = LocaleHelper.getString("received_amount", isHindi),
+                                    text = "Cash Received",
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         color = StatusPaidGreen,
                                         fontWeight = FontWeight.Bold
@@ -372,7 +374,7 @@ fun HomeScreen(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = LocaleHelper.getString("pending_balance", isHindi),
+                                    text = "Pending Due",
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         color = if (summary.totalPendingPayments > 0) StatusPendingOrange else Color.Gray,
                                         fontWeight = FontWeight.Bold
@@ -407,11 +409,11 @@ fun HomeScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = if (isHindi) "आज" else "Today",
+                                    text = "Today",
                                     style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
                                 )
                                 Text(
-                                    text = FormatUtils.formatDuration(summary.totalWorkingMinutes, isHindi),
+                                    text = FormatUtils.formatDuration(summary.totalWorkingMinutes),
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = TractorGreenPrimary
@@ -428,11 +430,11 @@ fun HomeScreen(
 
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = if (isHindi) "७ दिन (सप्ताह)" else "7-Day Week",
+                                    text = "7-Day Week",
                                     style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
                                 )
                                 Text(
-                                    text = FormatUtils.formatDuration(summary.weeklyWorkingMinutes, isHindi),
+                                    text = FormatUtils.formatDuration(summary.weeklyWorkingMinutes),
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF2E7D32)
@@ -449,14 +451,14 @@ fun HomeScreen(
 
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = if (isHindi) "३० दिन (महीना)" else "30-Day Month",
+                                    text = "30-Day Month",
                                     style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
                                 )
                                 Text(
-                                    text = FormatUtils.formatDuration(summary.monthlyWorkingMinutes, isHindi),
+                                    text = FormatUtils.formatDuration(summary.monthlyWorkingMinutes),
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1565C0)
+                                        color = Color(0xFF1B5E20)
                                     )
                                 )
                             }
@@ -465,37 +467,31 @@ fun HomeScreen(
                 }
             }
 
-            // Daily Work Records Header
+            // Daily Records Section Header
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${LocaleHelper.getString("daily_records", isHindi)} (${todayEntries.size})",
+                        text = "Work Records (${todayEntries.size})",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1B5E20)
                         )
                     )
 
-                    TextButton(
-                        onClick = onNavigateToAddWork,
-                        modifier = Modifier.testTag("quick_add_work_link")
-                    ) {
-                        Text(
-                            text = "+ " + LocaleHelper.getString("tab_add_work", isHindi),
-                            fontWeight = FontWeight.Bold,
-                            color = TractorGreenPrimary
-                        )
-                    }
+                    Text(
+                        text = FormatUtils.formatDate(selectedDateMillis),
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                    )
                 }
             }
 
-            // If empty
+            // Entries List or Empty State
             if (todayEntries.isEmpty()) {
                 item {
                     Card(
@@ -508,27 +504,26 @@ fun HomeScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(28.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.ic_work_rotavator),
+                                painter = painterResource(id = R.drawable.ic_app_logo),
                                 contentDescription = null,
-                                modifier = Modifier.size(64.dp)
+                                modifier = Modifier.size(54.dp)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = LocaleHelper.getString("no_work_today", isHindi),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.SemiBold,
+                                text = "No tractor work recorded for this day",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
                                     color = Color.DarkGray
                                 ),
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = LocaleHelper.getString("tap_to_add_work", isHindi),
+                                text = "Tap the + button below to record field work",
                                 style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                                 textAlign = TextAlign.Center
                             )
@@ -536,15 +531,11 @@ fun HomeScreen(
                             Button(
                                 onClick = onNavigateToAddWork,
                                 colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.testTag("add_work_empty_btn")
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(imageVector = Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = LocaleHelper.getString("tab_add_work", isHindi),
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text("Add Work Now")
                             }
                         }
                     }
@@ -552,92 +543,146 @@ fun HomeScreen(
             } else {
                 items(todayEntries, key = { it.id }) { entry ->
                     Card(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(2.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
-                            .clickable { selectedEntryForOptions = entry }
                             .testTag("work_entry_card_${entry.id}")
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Category visual implement icon
-                            Box(
-                                modifier = Modifier
-                                    .size(54.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFFF1F8E9)),
-                                contentAlignment = Alignment.Center
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Image(
-                                    painter = painterResource(id = ImplementImageHelper.getDrawableRes(entry.categoryDrawable)),
-                                    contentDescription = entry.categoryName,
-                                    modifier = Modifier.size(44.dp)
-                                )
-                            }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    // Visual Thumbnail
+                                    Box(
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color(0xFFEFF3EE)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = ImplementImageHelper.getDrawableRes(entry.categoryDrawable)),
+                                            contentDescription = entry.categoryName,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
 
-                            Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(12.dp))
 
-                            // Customer & Work Details
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = entry.customerName,
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = Color(0xFF1A1C19)
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-
-                                Text(
-                                    text = "${entry.categoryName} • ${FormatUtils.formatDuration(entry.durationMinutes, isHindi)}",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Color.DarkGray,
-                                        fontSize = 12.sp
-                                    )
-                                )
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    StatusBadge(
-                                        status = entry.getParsedStatus(),
-                                        amountPending = entry.amountPending,
-                                        isHindi = isHindi
-                                    )
-                                    if (entry.notes.isNotBlank()) {
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
                                         Text(
-                                            text = "• ${entry.notes}",
-                                            style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray),
+                                            text = entry.customerName,
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF212121)
+                                            ),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "${entry.categoryName} • ${FormatUtils.formatDuration(entry.durationMinutes)}",
+                                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
+
+                                StatusBadge(
+                                    status = entry.getParsedStatus(),
+                                    amountPending = entry.amountPending,
+                                    isHindi = false
+                                )
                             }
 
-                            // Total Amount
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = FormatUtils.formatCurrency(entry.totalAmount),
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = TractorGreenPrimary,
-                                        fontSize = 16.sp
+                            Spacer(modifier = Modifier.height(10.dp))
+                            HorizontalDivider(color = Color(0xFFF1F1F1))
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Rate: ₹${entry.rate} / ${entry.getParsedUnit().shortUnitEn}",
+                                        style = MaterialTheme.typography.bodySmall.copy(color = Color.DarkGray)
                                     )
-                                )
+                                    Text(
+                                        text = "Total Bill: ${FormatUtils.formatCurrency(entry.totalAmount)}",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = TractorGreenPrimary
+                                        )
+                                    )
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Share Text Receipt
+                                    IconButton(
+                                        onClick = {
+                                            val text = FormatUtils.buildWorkReceiptText(entry, ownerName, tractorModel, false)
+                                            FormatUtils.shareText(context, text, "Tractor Bill - ${entry.customerName}")
+                                        },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = "Share",
+                                            tint = TractorGreenPrimary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    // Generate & Share PDF
+                                    IconButton(
+                                        onClick = {
+                                            FormatUtils.generateAndSharePdfInvoice(context, entry, ownerName, tractorModel, ownerPhone)
+                                        },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PictureAsPdf,
+                                            contentDescription = "PDF",
+                                            tint = Color(0xFFC62828),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    // More options (Edit / Delete)
+                                    IconButton(
+                                        onClick = { selectedEntryForOptions = entry },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreVert,
+                                            contentDescription = "More",
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (entry.notes.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "₹${entry.rate}/${entry.getParsedUnit().shortUnitHi}",
-                                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
+                                    text = "📝 ${entry.notes}",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color.DarkGray,
+                                        fontSize = 11.sp
+                                    )
                                 )
                             }
                         }
@@ -646,7 +691,7 @@ fun HomeScreen(
             }
         }
 
-        // Floating Action Button to Add Work
+        // Floating Action Button: Add Work
         FloatingActionButton(
             onClick = onNavigateToAddWork,
             containerColor = TractorGreenPrimary,
@@ -654,181 +699,147 @@ fun HomeScreen(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .size(60.dp)
+                .padding(bottom = 90.dp, end = 20.dp)
                 .testTag("home_add_work_fab")
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add Work",
-                modifier = Modifier.size(32.dp)
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Work")
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Add Work", fontWeight = FontWeight.Bold)
+            }
         }
     }
 
-    // Modal BottomSheet for Entry Actions (Share, PDF, Edit, Delete)
-    if (selectedEntryForOptions != null) {
-        val entry = selectedEntryForOptions!!
+    // Modal: DatePicker Dialog for Home Screen
+    if (showDatePickerDialog) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDateMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePickerDialog = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let {
+                            viewModel.setSelectedDate(it)
+                        }
+                        showDatePickerDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePickerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // Options Bottom Sheet for an entry
+    selectedEntryForOptions?.let { entry ->
         ModalBottomSheet(
-            onDismissRequest = { selectedEntryForOptions = null }
+            onDismissRequest = { selectedEntryForOptions = null },
+            sheetState = rememberModalBottomSheetState()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = ImplementImageHelper.getDrawableRes(entry.categoryDrawable)),
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = entry.customerName,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "${entry.categoryName} • ${FormatUtils.formatDuration(entry.durationMinutes, isHindi)}",
-                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = FormatUtils.formatCurrency(entry.totalAmount),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = TractorGreenPrimary
-                        )
-                    )
-                }
+                Text(
+                    text = "${entry.customerName} - ${entry.categoryName}",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = "${FormatUtils.formatDuration(entry.durationMinutes)} • ${FormatUtils.formatCurrency(entry.totalAmount)}",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(16.dp))
 
-                // Action 1: Share WhatsApp Receipt
-                Button(
-                    onClick = {
-                        val text = FormatUtils.buildWorkReceiptText(entry, ownerName, tractorModel, isHindi)
-                        FormatUtils.shareText(context, text, "Tractor Hisab Bill")
-                        selectedEntryForOptions = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("share_receipt_btn")
-                ) {
-                    Icon(imageVector = Icons.Default.Share, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isHindi) "व्हाट्सएप / SMS रसीद भेजें" else "Share WhatsApp / SMS Receipt",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Action 2: Generate PDF Bill
+                // Edit Button
                 OutlinedButton(
                     onClick = {
-                        FormatUtils.generateAndSharePdfInvoice(context, entry, ownerName, tractorModel, ownerPhone)
                         selectedEntryForOptions = null
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("generate_pdf_btn")
-                ) {
-                    Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFFC62828))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isHindi) "PDF बिल बनाएं व शेयर करें" else "Generate & Share PDF Bill",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFC62828)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Action 3: Edit Work Record
-                OutlinedButton(
-                    onClick = {
-                        val toEdit = entry
-                        selectedEntryForOptions = null
-                        onNavigateToEditWork(toEdit)
+                        onNavigateToEditWork(entry)
                     },
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().testTag("edit_entry_btn")
                 ) {
                     Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = TractorGreenPrimary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isHindi) "काम विवरण बदलें (Edit)" else "Edit Work Entry",
-                        fontWeight = FontWeight.Bold,
-                        color = TractorGreenPrimary
-                    )
+                    Text("Edit Work Record", color = TractorGreenPrimary, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Action 4: Delete Record
+                // Share Text
+                Button(
+                    onClick = {
+                        selectedEntryForOptions = null
+                        val text = FormatUtils.buildWorkReceiptText(entry, ownerName, tractorModel, false)
+                        FormatUtils.shareText(context, text, "Tractor Bill - ${entry.customerName}")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Share WhatsApp / SMS Bill")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Delete Button
                 OutlinedButton(
                     onClick = {
                         entryToDelete = entry
                         selectedEntryForOptions = null
                     },
-                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().testTag("delete_entry_btn")
                 ) {
                     Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isHindi) "काम हिसाब हटाएं (Delete)" else "Delete Work Record",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Red
-                    )
+                    Text("Delete Record", color = Color.Red, fontWeight = FontWeight.Bold)
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 
-    // Delete confirmation dialog
-    if (entryToDelete != null) {
-        val entry = entryToDelete!!
+    // Delete Confirmation Dialog
+    entryToDelete?.let { entry ->
         AlertDialog(
             onDismissRequest = { entryToDelete = null },
-            title = {
-                Text(text = if (isHindi) "काम हिसाब हटाएं?" else "Delete Work Entry?")
-            },
-            text = {
-                Text(
-                    text = if (isHindi)
-                        "क्या आप ${entry.customerName} का ${entry.categoryName} (${FormatUtils.formatCurrency(entry.totalAmount)}) हिसाब हटाना चाहते हैं? यह स्थायी रूप से हट जाएगा।"
-                    else
-                        "Are you sure you want to delete the record for ${entry.customerName} - ${entry.categoryName} (${FormatUtils.formatCurrency(entry.totalAmount)})?"
-                )
-            },
+            title = { Text("Delete Work Record?") },
+            text = { Text("Are you sure you want to delete this record for ${entry.customerName} (${entry.categoryName})?") },
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.deleteWork(entry)
-                        entryToDelete = null
+                        viewModel.deleteWork(entry) {
+                            entryToDelete = null
+                        }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                    modifier = Modifier.testTag("confirm_delete_btn")
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) {
-                    Text(text = LocaleHelper.getString("delete", isHindi), color = Color.White)
+                    Text("Delete", color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { entryToDelete = null }) {
-                    Text(text = LocaleHelper.getString("cancel", isHindi))
+                    Text("Cancel")
                 }
             }
         )

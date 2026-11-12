@@ -79,6 +79,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.model.Customer
 import com.example.data.model.CustomerLedgerSummary
 import com.example.data.model.PaymentTransaction
@@ -102,7 +103,6 @@ fun CustomersScreen(
     viewModel: TractorViewModel
 ) {
     val context = LocalContext.current
-    val isHindi by viewModel.isHindi.collectAsState()
     val ownerName by viewModel.ownerName.collectAsState()
     val ledgers by viewModel.customerLedgers.collectAsState()
     val searchQuery by viewModel.customerSearchQuery.collectAsState()
@@ -125,6 +125,9 @@ fun CustomersScreen(
     val totalMarketBilled = remember(ledgers) { ledgers.sumOf { it.totalBillAmount } }
     val totalMarketReceived = remember(ledgers) { ledgers.sumOf { it.totalPaidAmount } }
 
+    // Form field for customer name
+    var newCustomerNameInput by remember { mutableStateOf("") }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
@@ -144,7 +147,7 @@ fun CustomersScreen(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.setCustomerSearch(it) },
-                        placeholder = { Text(LocaleHelper.getString("search_customers", isHindi)) },
+                        placeholder = { Text("Search customers...") },
                         leadingIcon = {
                             Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = TractorGreenPrimary)
                         },
@@ -159,83 +162,77 @@ fun CustomersScreen(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .testTag("customer_search_input")
+                            .testTag("search_customers_input")
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Market Due Card
+                    // Overall Market Ledger Card
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(2.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    Text(
-                                        text = LocaleHelper.getString("total_due_all", isHindi),
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            color = Color.Gray,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                Text(
+                                    text = "TOTAL MARKET BALANCE",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.Gray
                                     )
-                                    Text(
-                                        text = FormatUtils.formatCurrency(totalMarketDue),
-                                        style = MaterialTheme.typography.headlineMedium.copy(
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = if (totalMarketDue > 0) StatusOverdueRed else StatusPaidGreen,
-                                            fontSize = 24.sp
-                                        )
-                                    )
-                                }
-
-                                Surface(
-                                    color = Color(0xFFEFF3EE),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text(
-                                        text = "${ledgers.size} ${LocaleHelper.getString("total_customers", isHindi)}",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = TractorGreenPrimary
-                                        ),
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
-                                }
+                                )
+                                Text(
+                                    text = "${ledgers.size} Customers",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
+                                )
                             }
 
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                text = FormatUtils.formatCurrency(totalMarketDue),
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (totalMarketDue > 0) StatusOverdueRed else Color(0xFF2E7D32),
+                                    fontSize = 28.sp
+                                )
+                            )
+
                             Spacer(modifier = Modifier.height(10.dp))
-                            HorizontalDivider()
+                            HorizontalDivider(color = Color(0xFFF1F1F1))
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = "${if (isHindi) "कुल काम बिल:" else "Total Billed:"} ${FormatUtils.formatCurrency(totalMarketBilled)}",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Color.DarkGray)
-                                )
-                                Text(
-                                    text = "${if (isHindi) "कुल जमा:" else "Total Paid:"} ${FormatUtils.formatCurrency(totalMarketReceived)}",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = StatusPaidGreen,
-                                        fontWeight = FontWeight.Bold
+                                Column {
+                                    Text(text = "Total Billed", style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
+                                    Text(
+                                        text = FormatUtils.formatCurrency(totalMarketBilled),
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                                     )
-                                )
+                                }
+                                Column {
+                                    Text(text = "Total Received", style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
+                                    Text(
+                                        text = FormatUtils.formatCurrency(totalMarketReceived),
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = StatusPaidGreen)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Customers List
+            // Customer List
             if (ledgers.isEmpty()) {
                 item {
                     Column(
@@ -244,31 +241,30 @@ fun CustomersScreen(
                             .padding(40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(56.dp)
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(64.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = LocaleHelper.getString("no_customers_found", isHindi),
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
+                            text = if (searchQuery.isNotBlank()) "No customers match your search" else "No customers added yet",
+                            style = MaterialTheme.typography.titleMedium.copy(color = Color.DarkGray, fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Tap the + button to add a customer",
+                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                         )
                     }
                 }
             } else {
-                items(ledgers, key = { it.customer.id }) { ledger ->
-                    val customer = ledger.customer
+                items(ledgers, key = { it.customer.id }) { item ->
                     Card(
-                        shape = RoundedCornerShape(14.dp),
+                        onClick = { selectedLedgerForProfile = item },
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(2.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
-                            .clickable { selectedLedgerForProfile = ledger }
-                            .testTag("customer_item_${customer.id}")
+                            .testTag("customer_item_${item.customer.id}")
                     ) {
                         Row(
                             modifier = Modifier
@@ -276,16 +272,16 @@ fun CustomersScreen(
                                 .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Avatar Circle
+                            // Avatar
                             Box(
                                 modifier = Modifier
-                                    .size(46.dp)
+                                    .size(44.dp)
                                     .clip(CircleShape)
                                     .background(TractorGreenPrimary),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = customer.name.take(1).uppercase(),
+                                    text = item.customer.name.take(1).uppercase(),
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp
@@ -294,10 +290,9 @@ fun CustomersScreen(
 
                             Spacer(modifier = Modifier.width(12.dp))
 
-                            // Name, Village, and Stats
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = customer.name,
+                                    text = item.customer.name,
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
@@ -306,60 +301,40 @@ fun CustomersScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
 
-                                if (customer.village.isNotBlank() || customer.phone.isNotBlank()) {
+                                if (item.customer.village.isNotBlank() || item.customer.phone.isNotBlank()) {
                                     Text(
-                                        text = "${customer.village} ${if (customer.phone.isNotBlank()) "• ${customer.phone}" else ""}",
+                                        text = listOfNotNull(
+                                            item.customer.village.takeIf { it.isNotBlank() },
+                                            item.customer.phone.takeIf { it.isNotBlank() }
+                                        ).joinToString(" • "),
                                         style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.height(2.dp))
-
                                 Text(
-                                    text = "${FormatUtils.formatDuration(ledger.totalWorkMinutes, isHindi)} (${ledger.totalWorkEntries} ${if (isHindi) "काम" else "works"})",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TractorGreenPrimary,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                    text = "${item.totalWorkEntries} work entries • ${FormatUtils.formatDuration(item.totalWorkMinutes)}",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = Color.DarkGray)
                                 )
                             }
 
-                            // Balance Badge
+                            // Balance
                             Column(horizontalAlignment = Alignment.End) {
-                                if (ledger.remainingBalance > 0) {
-                                    Surface(
-                                        color = StatusOverdueBg,
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text(
-                                            text = "${if (isHindi) "बाकी " else "Due "}${FormatUtils.formatCurrency(ledger.remainingBalance)}",
-                                            color = StatusOverdueRed,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                } else {
-                                    Surface(
-                                        color = StatusPaidBg,
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text(
-                                            text = if (isHindi) "चुका दिया ✓" else "Settled ✓",
-                                            color = StatusPaidGreen,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "${if (isHindi) "बिल: " else "Bill: "}${FormatUtils.formatCurrency(ledger.totalBillAmount)}",
-                                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
+                                    text = FormatUtils.formatCurrency(item.remainingBalance),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (item.remainingBalance > 0) StatusOverdueRed else StatusPaidGreen,
+                                        fontSize = 17.sp
+                                    )
+                                )
+                                Text(
+                                    text = if (item.remainingBalance > 0) "Due" else "Settled",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = if (item.remainingBalance > 0) StatusOverdueRed else StatusPaidGreen,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 )
                             }
                         }
@@ -368,372 +343,355 @@ fun CustomersScreen(
             }
         }
 
-        // Floating Action Button: Add New Customer
+        // Add Customer FAB
         FloatingActionButton(
-            onClick = { showAddCustomerDialog = true },
+            onClick = {
+                newCustomerNameInput = ""
+                showAddCustomerDialog = true
+            },
             containerColor = TractorGreenPrimary,
             contentColor = Color.White,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .size(60.dp)
+                .padding(bottom = 90.dp, end = 20.dp)
                 .testTag("add_customer_fab")
         ) {
-            Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "Add Customer", modifier = Modifier.size(28.dp))
-        }
-    }
-
-    // Customer Profile & Ledger Sheet (Work & Payment History, Direct Call, WhatsApp share)
-    if (selectedLedgerForProfile != null) {
-        val ledger = selectedLedgerForProfile!!
-        val customer = ledger.customer
-        val customerEntries = allWorkEntries.filter { it.customerId == customer.id }
-        val customerPayments = allPayments.filter { it.customerId == customer.id }
-
-        var selectedTab by remember { mutableIntStateOf(0) }
-
-        ModalBottomSheet(
-            onDismissRequest = { selectedLedgerForProfile = null },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Customer Profile Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .background(TractorGreenPrimary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = customer.name.take(1).uppercase(),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(14.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = customer.name,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 19.sp
-                            )
-                        )
-                        if (customer.village.isNotBlank()) {
-                            Text(
-                                text = "🏡 ${customer.village}",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color.DarkGray)
-                            )
-                        }
-                        if (customer.phone.isNotBlank()) {
-                            Text(
-                                text = "📞 ${customer.phone}",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color.DarkGray)
-                            )
-                        }
-                    }
-
-                    // Direct Call Button
-                    if (customer.phone.isNotBlank()) {
-                        IconButton(
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${customer.phone}"))
-                                context.startActivity(intent)
-                            },
-                            modifier = Modifier.testTag("call_customer_btn")
-                        ) {
-                            Icon(imageVector = Icons.Default.Call, contentDescription = "Call", tint = TractorGreenPrimary)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Account Financial Summary Cards
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Total Billed
-                    Surface(
-                        color = Color(0xFFEFF3EE),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(if (isHindi) "कुल काम" else "Total Work", style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
-                            Text(FormatUtils.formatCurrency(ledger.totalBillAmount), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
-                    // Total Paid
-                    Surface(
-                        color = StatusPaidBg,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(if (isHindi) "कुल जमा" else "Paid", style = MaterialTheme.typography.labelSmall.copy(color = StatusPaidGreen))
-                            Text(FormatUtils.formatCurrency(ledger.totalPaidAmount), fontWeight = FontWeight.Bold, color = StatusPaidGreen, fontSize = 14.sp)
-                        }
-                    }
-                    // Net Balance Due
-                    Surface(
-                        color = if (ledger.remainingBalance > 0) StatusOverdueBg else StatusPaidBg,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(if (isHindi) "बाकी बकाया" else "Due Balance", style = MaterialTheme.typography.labelSmall.copy(color = if (ledger.remainingBalance > 0) StatusOverdueRed else StatusPaidGreen))
-                            Text(FormatUtils.formatCurrency(ledger.remainingBalance), fontWeight = FontWeight.ExtraBold, color = if (ledger.remainingBalance > 0) StatusOverdueRed else StatusPaidGreen, fontSize = 14.sp)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Action Buttons: + Record Payment & Share WhatsApp Statement
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            ledgerForPayment = ledger
-                            paymentAmountText = if (ledger.remainingBalance > 0) ledger.remainingBalance.toInt().toString() else ""
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1.2f).testTag("record_payment_btn")
-                    ) {
-                        Icon(imageVector = Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isHindi) "रुपये जमा करें" else "Record Payment",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            val statement = FormatUtils.buildCustomerStatementText(
-                                ledger,
-                                customerEntries,
-                                customerPayments,
-                                ownerName,
-                                isHindi
-                            )
-                            FormatUtils.shareText(context, statement, "Customer Statement")
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f).testTag("share_statement_btn")
-                    ) {
-                        Icon(imageVector = Icons.Default.Share, contentDescription = null, tint = Color(0xFF25D366), modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isHindi) "खाता भेजें" else "Share Bill",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Work & Payment History Tabs
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = Color.Transparent,
-                    contentColor = TractorGreenPrimary
-                ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = {
-                            Text(
-                                text = "${LocaleHelper.getString("work_history", isHindi)} (${customerEntries.size})",
-                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = {
-                            Text(
-                                text = "${LocaleHelper.getString("payment_history", isHindi)} (${customerPayments.size})",
-                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Tab Content
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    if (selectedTab == 0) {
-                        // Work Entries List
-                        if (customerEntries.isEmpty()) {
-                            Text(
-                                text = if (isHindi) "कोई काम दर्ज नहीं है" else "No work entries found",
-                                color = Color.Gray,
-                                modifier = Modifier.padding(16.dp)
-                            )
-                        } else {
-                            customerEntries.forEach { entry ->
-                                Card(
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAF8)),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = ImplementImageHelper.getDrawableRes(entry.categoryDrawable)),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(36.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(entry.categoryName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                            Text(
-                                                "${FormatUtils.formatDate(entry.workDateMillis, isHindi)} • ${FormatUtils.formatDuration(entry.durationMinutes, isHindi)}",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
-                                            )
-                                        }
-                                        Text(
-                                            FormatUtils.formatCurrency(entry.totalAmount),
-                                            fontWeight = FontWeight.Bold,
-                                            color = TractorGreenPrimary
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Payment Transactions List
-                        if (customerPayments.isEmpty()) {
-                            Text(
-                                text = if (isHindi) "कोई भुगतान इतिहास नहीं मिला" else "No payment transactions recorded",
-                                color = Color.Gray,
-                                modifier = Modifier.padding(16.dp)
-                            )
-                        } else {
-                            customerPayments.forEach { payment ->
-                                Card(
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAF8)),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(34.dp)
-                                                .clip(CircleShape)
-                                                .background(StatusPaidBg),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Money,
-                                                contentDescription = null,
-                                                tint = StatusPaidGreen,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "${payment.paymentMethod} Payment",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 14.sp
-                                            )
-                                            Text(
-                                                text = "${FormatUtils.formatDate(payment.paymentDateMillis, isHindi)}${if (payment.notes.isNotBlank()) " • ${payment.notes}" else ""}",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
-                                            )
-                                        }
-                                        Text(
-                                            text = "+${FormatUtils.formatCurrency(payment.amount)}",
-                                            fontWeight = FontWeight.Bold,
-                                            color = StatusPaidGreen
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Edit / Delete Customer buttons at bottom
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    TextButton(
-                        onClick = {
-                            customerToEdit = customer
-                            selectedLedgerForProfile = null
-                        }
-                    ) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (isHindi) "ग्राहक विवरण बदलें" else "Edit Customer")
-                    }
-
-                    TextButton(
-                        onClick = {
-                            customerToDelete = customer
-                            selectedLedgerForProfile = null
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
-                    ) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (isHindi) "ग्राहक हटाएं" else "Delete Customer")
-                    }
-                }
+                Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "Add Customer")
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Add Customer", fontWeight = FontWeight.Bold)
             }
         }
     }
 
-    // Modal: Record Payment from Customer Profile
-    if (ledgerForPayment != null) {
-        val ledger = ledgerForPayment!!
+    // Modal Sheet: Customer Full Profile & Statement
+    selectedLedgerForProfile?.let { ledger ->
+        val customerEntries = remember(allWorkEntries, ledger) {
+            allWorkEntries.filter { it.customerId == ledger.customer.id }
+        }
+        val customerPayments = remember(allPayments, ledger) {
+            allPayments.filter { it.customerId == ledger.customer.id }
+        }
+
+        var activeTab by remember { mutableIntStateOf(0) } // 0 = Work Entries, 1 = Payments
+
+        AlertDialog(
+            onDismissRequest = { selectedLedgerForProfile = null },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = ledger.customer.name,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                        if (ledger.customer.village.isNotBlank() || ledger.customer.phone.isNotBlank()) {
+                            Text(
+                                text = listOfNotNull(
+                                    ledger.customer.village.takeIf { it.isNotBlank() },
+                                    ledger.customer.phone.takeIf { it.isNotBlank() }
+                                ).joinToString(" • "),
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                            )
+                        }
+                    }
+                    IconButton(onClick = { selectedLedgerForProfile = null }) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(420.dp)
+                ) {
+                    // Summary Balance Box
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (ledger.remainingBalance > 0) StatusPendingBg else StatusPaidBg,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = if (ledger.remainingBalance > 0) "Pending Balance" else "Account Settled",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text(
+                                    text = FormatUtils.formatCurrency(ledger.remainingBalance),
+                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (ledger.remainingBalance > 0) StatusOverdueRed else StatusPaidGreen
+                                    )
+                                )
+                            }
+
+                            // Record Payment Action
+                            Button(
+                                onClick = {
+                                    ledgerForPayment = ledger
+                                    paymentAmountText = if (ledger.remainingBalance > 0) ledger.remainingBalance.toInt().toString() else ""
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Receive Payment")
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Tab Row: Work Entries vs Payments
+                    TabRow(selectedTabIndex = activeTab) {
+                        Tab(selected = activeTab == 0, onClick = { activeTab = 0 }) {
+                            Text("Work (${customerEntries.size})", modifier = Modifier.padding(10.dp), fontWeight = FontWeight.Bold)
+                        }
+                        Tab(selected = activeTab == 1, onClick = { activeTab = 1 }) {
+                            Text("Payments (${customerPayments.size})", modifier = Modifier.padding(10.dp), fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Tab Content
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (activeTab == 0) {
+                            if (customerEntries.isEmpty()) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("No work entries for this customer", color = Color.Gray)
+                                }
+                            } else {
+                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                    items(customerEntries) { e ->
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFFF9FAF8),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(10.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(text = e.categoryName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                                    Text(
+                                                        text = "${FormatUtils.formatDate(e.workDateMillis)} • ${FormatUtils.formatDuration(e.durationMinutes)}",
+                                                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                                                    )
+                                                }
+                                                Column(horizontalAlignment = Alignment.End) {
+                                                    Text(
+                                                        text = FormatUtils.formatCurrency(e.totalAmount),
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = TractorGreenPrimary
+                                                    )
+                                                    Text(
+                                                        text = if (e.amountPending > 0) "Due: ${FormatUtils.formatCurrency(e.amountPending)}" else "Paid",
+                                                        style = MaterialTheme.typography.labelSmall.copy(
+                                                            color = if (e.amountPending > 0) StatusOverdueRed else StatusPaidGreen,
+                                                            fontWeight = FontWeight.SemiBold
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            if (customerPayments.isEmpty()) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("No payment transactions recorded", color = Color.Gray)
+                                }
+                            } else {
+                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                    items(customerPayments) { p ->
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFFF1F8E9),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(10.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column {
+                                                    Text(text = "Received via ${p.paymentMethod}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                    Text(
+                                                        text = FormatUtils.formatDate(p.paymentDateMillis),
+                                                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                                                    )
+                                                }
+                                                Text(
+                                                    text = FormatUtils.formatCurrency(p.amount),
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = StatusPaidGreen
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                // Share Statement
+                Button(
+                    onClick = {
+                        val statement = FormatUtils.buildCustomerStatementText(
+                            summary = ledger,
+                            entries = customerEntries,
+                            payments = customerPayments,
+                            ownerName = ownerName,
+                            isHindi = false
+                        )
+                        FormatUtils.shareText(context, statement, "Account Statement - ${ledger.customer.name}")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
+                ) {
+                    Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Share Statement")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedLedgerForProfile = null }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+
+    // Modal: Record Payment Dialog
+    ledgerForPayment?.let { ledger ->
         AlertDialog(
             onDismissRequest = { ledgerForPayment = null },
+            title = { Text("Receive Payment from ${ledger.customer.name}") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Current Balance Due: ${FormatUtils.formatCurrency(ledger.remainingBalance)}",
+                        fontWeight = FontWeight.Bold,
+                        color = StatusOverdueRed
+                    )
+
+                    OutlinedTextField(
+                        value = paymentAmountText,
+                        onValueChange = { paymentAmountText = it },
+                        label = { Text("Amount Received (₹)") },
+                        prefix = { Text("₹", fontWeight = FontWeight.Bold) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("payment_amount_input")
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("CASH" to "Cash", "UPI" to "UPI / Online").forEach { (m, label) ->
+                            val sel = paymentMethod == m
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (sel) TractorGreenPrimary else Color(0xFFEFF3EE),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { paymentMethod = m }
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (sel) Color.White else Color.DarkGray,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = paymentNoteText,
+                        onValueChange = { paymentNoteText = it },
+                        placeholder = { Text("Notes (optional)") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val amt = paymentAmountText.toDoubleOrNull() ?: 0.0
+                        if (amt > 0) {
+                            viewModel.recordPayment(
+                                customerId = ledger.customer.id,
+                                customerName = ledger.customer.name,
+                                amount = amt,
+                                method = paymentMethod,
+                                dateMillis = System.currentTimeMillis(),
+                                notes = paymentNoteText.trim()
+                            ) {
+                                Toast.makeText(context, "✅ Payment of ₹$amt recorded!", Toast.LENGTH_SHORT).show()
+                                ledgerForPayment = null
+                                selectedLedgerForProfile = null
+                            }
+                        } else {
+                            Toast.makeText(context, "Please enter valid payment amount", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
+                ) {
+                    Text("Save Payment")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ledgerForPayment = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Modal: Add Customer (ONLY Customer Name - Phase 4)
+    if (showAddCustomerDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddCustomerDialog = false },
             title = {
                 Text(
-                    text = "${if (isHindi) "रुपये जमा करें" else "Record Payment"} - ${ledger.customer.name}",
+                    text = "Add Customer",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             },
@@ -743,251 +701,42 @@ fun CustomersScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "${if (isHindi) "वर्तमान बकाया:" else "Current Balance Due:"} ${FormatUtils.formatCurrency(ledger.remainingBalance)}",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = StatusOverdueRed
-                        )
+                        text = "Enter customer name to add:",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
                     )
-
                     OutlinedTextField(
-                        value = paymentAmountText,
-                        onValueChange = { paymentAmountText = it },
-                        label = { Text(if (isHindi) "मिली राशि (₹)" else "Amount Received (₹)") },
-                        prefix = { Text("₹", fontWeight = FontWeight.Bold) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        value = newCustomerNameInput,
+                        onValueChange = { newCustomerNameInput = it },
+                        label = { Text("Customer Name") },
+                        placeholder = { Text("e.g. Ramesh Patel") },
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("payment_amount_input")
-                    )
-
-                    // Method toggle (Cash / UPI)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (isHindi) "माध्यम:" else "Method:",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        listOf("CASH" to (if (isHindi) "नगद" else "Cash"), "UPI" to "UPI", "BANK" to "Bank").forEach { (m, label) ->
-                            val isSel = paymentMethod == m
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSel) TractorGreenPrimary else Color(0xFFEFF3EE),
-                                modifier = Modifier
-                                    .padding(end = 6.dp)
-                                    .clickable { paymentMethod = m }
-                            ) {
-                                Text(
-                                    text = label,
-                                    color = if (isSel) Color.White else Color.DarkGray,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    OutlinedTextField(
-                        value = paymentNoteText,
-                        onValueChange = { paymentNoteText = it },
-                        label = { Text(if (isHindi) "नोट (ऐच्छिक)" else "Note (Optional)") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("add_customer_name_input")
                     )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val amount = paymentAmountText.toDoubleOrNull()
-                        if (amount != null && amount > 0) {
-                            viewModel.recordPayment(
-                                customerId = ledger.customer.id,
-                                customerName = ledger.customer.name,
-                                amount = amount,
-                                method = paymentMethod,
-                                dateMillis = System.currentTimeMillis(),
-                                notes = paymentNoteText.trim()
-                            ) {
-                                Toast.makeText(
-                                    context,
-                                    if (isHindi) "₹$amount जमा दर्ज हुआ!" else "Payment of ₹$amount recorded!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                ledgerForPayment = null
+                        if (newCustomerNameInput.trim().isNotBlank()) {
+                            viewModel.addCustomer(newCustomerNameInput.trim()) {
+                                Toast.makeText(context, "✅ Customer added successfully!", Toast.LENGTH_SHORT).show()
+                                newCustomerNameInput = ""
+                                showAddCustomerDialog = false
                             }
                         } else {
-                            Toast.makeText(context, if (isHindi) "कृपया सही राशि दर्ज करें" else "Please enter valid amount", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please enter customer name", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
-                    modifier = Modifier.testTag("confirm_record_payment_btn")
+                    modifier = Modifier.testTag("submit_customer_btn")
                 ) {
-                    Text(LocaleHelper.getString("save", isHindi))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { ledgerForPayment = null }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
-                }
-            }
-        )
-    }
-
-    // Dialog: Add Customer
-    if (showAddCustomerDialog) {
-        var name by remember { mutableStateOf("") }
-        var phone by remember { mutableStateOf("") }
-        var village by remember { mutableStateOf("") }
-
-        AlertDialog(
-            onDismissRequest = { showAddCustomerDialog = false },
-            title = { Text(LocaleHelper.getString("add_new_customer", isHindi), fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text(LocaleHelper.getString("enter_customer_name", isHindi)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("add_customer_name_dialog_input")
-                    )
-                    OutlinedTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = { Text(LocaleHelper.getString("customer_phone", isHindi)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = village,
-                        onValueChange = { village = it },
-                        label = { Text(LocaleHelper.getString("customer_village", isHindi)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (name.trim().isNotBlank()) {
-                            viewModel.addCustomer(name, phone, village) {
-                                showAddCustomerDialog = false
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
-                ) {
-                    Text(LocaleHelper.getString("save", isHindi))
+                    Text("Save")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddCustomerDialog = false }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
-                }
-            }
-        )
-    }
-
-    // Dialog: Edit Customer
-    if (customerToEdit != null) {
-        val cust = customerToEdit!!
-        var editName by remember { mutableStateOf(cust.name) }
-        var editPhone by remember { mutableStateOf(cust.phone) }
-        var editVillage by remember { mutableStateOf(cust.village) }
-
-        AlertDialog(
-            onDismissRequest = { customerToEdit = null },
-            title = { Text(if (isHindi) "ग्राहक विवरण बदलें" else "Edit Customer", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = editName,
-                        onValueChange = { editName = it },
-                        label = { Text(LocaleHelper.getString("enter_customer_name", isHindi)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editPhone,
-                        onValueChange = { editPhone = it },
-                        label = { Text(LocaleHelper.getString("customer_phone", isHindi)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editVillage,
-                        onValueChange = { editVillage = it },
-                        label = { Text(LocaleHelper.getString("customer_village", isHindi)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (editName.trim().isNotBlank()) {
-                            viewModel.updateCustomer(cust.copy(name = editName.trim(), phone = editPhone.trim(), village = editVillage.trim())) {
-                                customerToEdit = null
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
-                ) {
-                    Text(LocaleHelper.getString("save", isHindi))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { customerToEdit = null }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
-                }
-            }
-        )
-    }
-
-    // Dialog: Confirm Delete Customer
-    if (customerToDelete != null) {
-        val cust = customerToDelete!!
-        AlertDialog(
-            onDismissRequest = { customerToDelete = null },
-            title = { Text(if (isHindi) "ग्राहक हटाएं?" else "Delete Customer?") },
-            text = {
-                Text(
-                    text = if (isHindi)
-                        "क्या आप ${cust.name} और उनके सभी काम और भुगतान हिसाब हटाना चाहते हैं? यह क्रिया वापस नहीं की जा सकती।"
-                    else
-                        "Are you sure you want to delete ${cust.name} and all their work entries and payment history?"
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.deleteCustomer(cust)
-                        customerToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text(LocaleHelper.getString("delete", isHindi), color = Color.White)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { customerToDelete = null }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
+                    Text("Cancel")
                 }
             }
         )

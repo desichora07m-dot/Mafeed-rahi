@@ -14,6 +14,9 @@ interface WorkCategoryDao {
     @Query("SELECT * FROM work_categories WHERE isDeleted = 0 ORDER BY id ASC")
     fun getAllCategories(): Flow<List<WorkCategory>>
 
+    @Query("SELECT * FROM work_categories WHERE isDeleted = 0 ORDER BY id ASC")
+    suspend fun getAllCategoriesList(): List<WorkCategory>
+
     @Query("SELECT * FROM work_categories WHERE id = :id")
     suspend fun getCategoryById(id: Long): WorkCategory?
 

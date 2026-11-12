@@ -29,17 +29,12 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.HourglassEmpty
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.Cancel
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -93,14 +88,14 @@ enum class AppScreen(val route: String, val icon: ImageVector) {
 object ImplementImageHelper {
     fun getDrawableRes(drawableName: String): Int {
         return when (drawableName.lowercase().trim()) {
-            "ic_work_cultivator" -> R.drawable.ic_work_cultivator
-            "ic_work_kartal" -> R.drawable.ic_work_kartal
-            "ic_work_rotavator" -> R.drawable.ic_work_rotavator
+            "img_cultivator", "ic_work_cultivator" -> R.drawable.img_cultivator
+            "img_kartal", "ic_work_kartal" -> R.drawable.img_kartal
+            "img_rotavator", "ic_work_rotavator" -> R.drawable.img_rotavator
+            "img_trolley", "ic_work_trolley" -> R.drawable.img_trolley
+            "img_mitti_cutting", "ic_work_mitti_karna" -> R.drawable.img_mitti_cutting
             "ic_work_land_leveler" -> R.drawable.ic_work_land_leveler
             "ic_work_paddy_thresher" -> R.drawable.ic_work_paddy_thresher
             "ic_work_maize_thresher" -> R.drawable.ic_work_maize_thresher
-            "ic_work_trolley" -> R.drawable.ic_work_trolley
-            "ic_work_mitti_karna" -> R.drawable.ic_work_mitti_karna
             else -> R.drawable.ic_work_custom
         }
     }
@@ -109,10 +104,10 @@ object ImplementImageHelper {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TractorTopBar(
-    title: String,
-    subtitle: String? = null,
-    isHindi: Boolean,
-    onToggleLanguage: () -> Unit,
+    title: String = "Tractor Hisab",
+    subtitle: String? = "Tractor Work & Accounting",
+    isHindi: Boolean = false,
+    onToggleLanguage: (() -> Unit)? = null,
     onNavigateSettings: () -> Unit
 ) {
     Surface(
@@ -141,7 +136,7 @@ fun TractorTopBar(
                     Image(
                         painter = painterResource(id = R.drawable.ic_app_logo),
                         contentDescription = "Logo",
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                 }
 
@@ -172,39 +167,6 @@ fun TractorTopBar(
                 }
             }
 
-            // Language Switcher Badge (Hindi / English)
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.18f),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable { onToggleLanguage() }
-                    .testTag("language_toggle_btn")
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Language,
-                        contentDescription = "Language",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isHindi) "हिन्दी 🇮🇳" else "English 🌐",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
             IconButton(
                 onClick = onNavigateSettings,
                 modifier = Modifier.testTag("settings_top_btn")
@@ -222,7 +184,7 @@ fun TractorTopBar(
 @Composable
 fun TractorBottomBar(
     currentScreen: AppScreen,
-    isHindi: Boolean,
+    isHindi: Boolean = false,
     onScreenSelected: (AppScreen) -> Unit
 ) {
     NavigationBar(
@@ -231,11 +193,11 @@ fun TractorBottomBar(
         modifier = Modifier.testTag("bottom_nav_bar")
     ) {
         val items = listOf(
-            Triple(AppScreen.HOME, LocaleHelper.getString("tab_home", isHindi), Icons.Default.Home),
-            Triple(AppScreen.ADD_WORK, LocaleHelper.getString("tab_add_work", isHindi), Icons.Default.AddCircle),
-            Triple(AppScreen.CUSTOMERS, LocaleHelper.getString("tab_customers", isHindi), Icons.Default.People),
-            Triple(AppScreen.RATES, LocaleHelper.getString("tab_rates", isHindi), Icons.Default.Tune),
-            Triple(AppScreen.REPORTS, LocaleHelper.getString("tab_reports", isHindi), Icons.Default.Assessment)
+            Triple(AppScreen.HOME, "Home", Icons.Default.Home),
+            Triple(AppScreen.ADD_WORK, "Add Work", Icons.Default.AddCircle),
+            Triple(AppScreen.CUSTOMERS, "Customers", Icons.Default.People),
+            Triple(AppScreen.RATES, "Rates", Icons.Default.Tune),
+            Triple(AppScreen.REPORTS, "Reports", Icons.Default.Assessment)
         )
 
         items.forEach { (screen, label, icon) ->
@@ -276,26 +238,26 @@ fun TractorBottomBar(
 fun StatusBadge(
     status: PaymentStatus,
     amountPending: Double = 0.0,
-    isHindi: Boolean,
+    isHindi: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val (bgColor, textColor, label, icon) = when (status) {
         PaymentStatus.PAID -> Quad(
             StatusPaidBg,
             StatusPaidGreen,
-            LocaleHelper.getString("paid", isHindi),
+            "Paid",
             Icons.Default.CheckCircle
         )
         PaymentStatus.PARTIAL -> Quad(
             StatusPendingBg,
             StatusPendingOrange,
-            LocaleHelper.getString("partial", isHindi) + if (amountPending > 0) " (${FormatUtils.formatCurrency(amountPending)})" else "",
+            "Partial" + if (amountPending > 0) " (${FormatUtils.formatCurrency(amountPending)})" else "",
             Icons.Default.HourglassEmpty
         )
         PaymentStatus.UNPAID -> Quad(
             StatusOverdueBg,
             StatusOverdueRed,
-            LocaleHelper.getString("unpaid", isHindi) + if (amountPending > 0) " (${FormatUtils.formatCurrency(amountPending)})" else "",
+            "Unpaid" + if (amountPending > 0) " (${FormatUtils.formatCurrency(amountPending)})" else "",
             Icons.Default.HourglassBottom
         )
     }
@@ -334,7 +296,7 @@ private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, v
 fun WorkCategoryGridCard(
     category: WorkCategory,
     isSelected: Boolean,
-    isHindi: Boolean,
+    isHindi: Boolean = false,
     onSelect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -355,32 +317,30 @@ fun WorkCategoryGridCard(
             .testTag("category_card_${category.key}")
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Large visual implement image
+            // Realistic Photography Banner
             Box(
                 modifier = Modifier
-                    .size(68.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (isSelected) TractorGreenPrimary.copy(alpha = 0.15f) else Color(0xFFF5F7F4)),
+                    .fillMaxWidth()
+                    .height(96.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(Color(0xFFE8ECE5)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = ImplementImageHelper.getDrawableRes(category.drawableName)),
                     contentDescription = category.nameEn,
-                    modifier = Modifier.size(56.dp)
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
 
                 if (isSelected) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(2.dp)
-                            .size(18.dp)
+                            .padding(6.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
                             .background(TractorGreenPrimary),
                         contentAlignment = Alignment.Center
@@ -389,55 +349,148 @@ fun WorkCategoryGridCard(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Selected",
                             tint = Color.White,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Category Name
+                Text(
+                    text = category.nameEn,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = if (isSelected) TractorGreenPrimary else Color(0xFF212121)
+                    ),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-            // Implement Title (Bilingual prominence)
-            Text(
-                text = if (isHindi) category.nameHi else category.nameEn,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = if (isSelected) TractorGreenPrimary else Color(0xFF212121)
-                ),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Default rate badge
+                Surface(
+                    color = TractorGold.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = "₹${category.defaultRate.toInt()} / ${category.getParsedUnit().shortUnitEn}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF8D4B00),
+                            fontSize = 11.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OtherWorkGridCard(
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) TractorGreenPrimary.copy(alpha = 0.08f) else Color(0xFFF9FAF8)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 2.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .border(
+                width = if (isSelected) 2.5.dp else 1.5.dp,
+                color = if (isSelected) TractorGreenPrimary else TractorGreenPrimary.copy(alpha = 0.4f),
+                shape = RoundedCornerShape(16.dp)
             )
+            .testTag("category_card_other_work")
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(96.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(TractorGreenPrimary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircle,
+                        contentDescription = "Other Work",
+                        tint = TractorGreenPrimary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
 
-            // Secondary name below
-            Text(
-                text = if (isHindi) category.nameEn else category.nameHi,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 11.sp,
-                    color = Color.Gray
-                ),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(TractorGreenPrimary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Selected",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Default rate badge preview
-            Surface(
-                color = TractorGold.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "₹${category.defaultRate.toInt()} / ${if (isHindi) category.getParsedUnit().shortUnitHi else category.getParsedUnit().shortUnitEn}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF8D4B00),
-                        fontSize = 10.sp
+                    text = "Other Work",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = TractorGreenPrimary
                     ),
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Surface(
+                    color = TractorGreenPrimary.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = "+ Custom Work",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TractorGreenPrimary,
+                            fontSize = 11.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
     }

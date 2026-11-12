@@ -29,7 +29,6 @@ import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.TractorHisabTheme
 import com.example.ui.viewmodel.TractorViewModel
-import com.example.util.LocaleHelper
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,9 +49,6 @@ fun TractorApp(
     var currentScreen by remember { mutableStateOf(AppScreen.HOME) }
     var entryToEdit by remember { mutableStateOf<WorkEntry?>(null) }
 
-    val isHindi by viewModel.isHindi.collectAsState()
-    val ownerName by viewModel.ownerName.collectAsState()
-
     // Handle back button when in a subscreen
     if (currentScreen != AppScreen.HOME) {
         BackHandler {
@@ -67,10 +63,8 @@ fun TractorApp(
         topBar = {
             if (currentScreen != AppScreen.ADD_WORK && currentScreen != AppScreen.SETTINGS) {
                 TractorTopBar(
-                    title = LocaleHelper.getString("app_name", isHindi),
-                    subtitle = LocaleHelper.getString("app_tagline", isHindi),
-                    isHindi = isHindi,
-                    onToggleLanguage = { viewModel.toggleLanguage() },
+                    title = "Tractor Hisab",
+                    subtitle = "Work & Customer Accounting",
                     onNavigateSettings = { currentScreen = AppScreen.SETTINGS }
                 )
             }
@@ -79,7 +73,6 @@ fun TractorApp(
             if (currentScreen != AppScreen.ADD_WORK && currentScreen != AppScreen.SETTINGS) {
                 TractorBottomBar(
                     currentScreen = currentScreen,
-                    isHindi = isHindi,
                     onScreenSelected = { screen ->
                         if (screen == AppScreen.ADD_WORK) {
                             entryToEdit = null

@@ -7,6 +7,7 @@ import com.example.data.AppDatabase
 import com.example.data.model.Customer
 import com.example.data.model.PaymentStatus
 import com.example.data.model.RateUnit
+import com.example.data.model.WorkCategory
 import com.example.data.model.WorkEntry
 import com.example.data.repository.TractorRepository
 import com.example.util.FormatUtils
@@ -43,15 +44,22 @@ class LaunchActivityTest {
         val categories = repo.allCategories.first()
         assertTrue(categories.isNotEmpty())
 
-        // Test customer creation
-        val customerId = repo.insertCustomer(Customer(name = "Kisan Singh", phone = "9876500000", village = "Khedi"))
+        // Test customer creation with ONLY name (Phase 4)
+        val customerId = repo.insertCustomer(Customer(name = "Kisan Singh"))
         assertTrue(customerId > 0)
 
-        // Test WorkEntry creation with live calculation: 45 min @ ₹15/min = ₹675
-        val durationMins = 45
-        val rate = 15.0
-        val total = FormatUtils.calculateTotalAmount(durationMins, rate, RateUnit.PER_MINUTE)
-        assertEquals(675.0, total, 0.001)
+        // Test flexible calculations:
+        // Example 1 — Per Minute: 47 min @ ₹15/min = ₹705
+        val totalPerMin = FormatUtils.calculateTotalAmount(47, 15.0, RateUnit.PER_MINUTE)
+        assertEquals(705.0, totalPerMin, 0.001)
+
+        // Example 2 — Per Hour: 2 hours (120 min) @ ₹800/hr = ₹1,600
+        val totalPerHour = FormatUtils.calculateTotalAmount(120, 800.0, RateUnit.PER_HOUR)
+        assertEquals(1600.0, totalPerHour, 0.001)
+
+        // Example 3 — Fixed Amount: ₹1,500
+        val totalFixed = FormatUtils.calculateTotalAmount(60, 1500.0, RateUnit.FIXED)
+        assertEquals(1500.0, totalFixed, 0.001)
 
         val workEntry = WorkEntry(
             customerId = customerId,
@@ -59,13 +67,13 @@ class LaunchActivityTest {
             categoryId = 1,
             categoryKey = "cultivator",
             categoryName = "Cultivator",
-            categoryDrawable = "ic_work_cultivator",
-            durationMinutes = durationMins,
-            rate = rate,
+            categoryDrawable = "img_cultivator",
+            durationMinutes = 47,
+            rate = 15.0,
             rateUnit = RateUnit.PER_MINUTE.id,
-            totalAmount = total,
+            totalAmount = totalPerMin,
             amountPaid = 300.0,
-            amountPending = 375.0,
+            amountPending = 405.0,
             paymentStatus = PaymentStatus.PARTIAL.id,
             workDateMillis = System.currentTimeMillis(),
             notes = "East field tested"
@@ -73,12 +81,50 @@ class LaunchActivityTest {
         val entryId = repo.saveWorkEntry(workEntry, "CASH")
         assertTrue(entryId > 0)
 
-        // Verify customer ledger calculates balance accurately (675 - 300 = 375 pending)
+        // Verify customer ledger calculates balance accurately (705 - 300 = 405 pending)
         val ledgers = repo.customerLedgers.first()
         val customerLedger = ledgers.find { it.customer.id == customerId }
         assertNotNull(customerLedger)
-        assertEquals(375.0, customerLedger!!.remainingBalance, 0.001)
-        assertEquals(675.0, customerLedger.totalBillAmount, 0.001)
+        assertEquals(405.0, customerLedger!!.remainingBalance, 0.001)
+        assertEquals(705.0, customerLedger.totalBillAmount, 0.001)
         assertEquals(300.0, customerLedger.totalPaidAmount, 0.001)
+
+        // Test CSV generation
+        val csv = repo.exportWorkEntriesCsv()
+        assertTrue(csv.contains("Kisan Singh"))
+        assertTrue(csv.contains("Cultivator"))
+
+        // Test visible categories (only the 5 default categories + any custom, excluding removed ones)
+        val visibleCats = repo.visibleCategories.first()
+        val keys = visibleCats.map { it.key }
+        assertTrue(keys.contains("cultivator"))
+        assertTrue(keys.contains("kartal"))
+        assertTrue(keys.contains("rotavator"))
+        assertTrue(keys.contains("trolley"))
+        assertTrue(keys.contains("mitti_cutting"))
+        assertTrue(!keys.contains("land_leveler"))
+        assertTrue(!keys.contains("paddy_thresher"))
+        assertTrue(!keys.contains("maize_thresher"))
+    }
+
+    @Test
+    fun testCustomCategoryCreationAndPersistence() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val repo = TractorRepository.getRepository(context)
+
+        val customCategory = WorkCategory(
+            key = "custom_deep_plough",
+            nameEn = "Deep Ploughing",
+            nameHi = "Deep Ploughing",
+            drawableName = "ic_work_custom",
+            defaultRate = 25.0,
+            defaultUnit = RateUnit.PER_MINUTE.id,
+            isCustom = true
+        )
+        val id = repo.saveCategory(customCategory)
+        assertTrue(id > 0)
+
+        val visibleCats = repo.visibleCategories.first()
+        assertTrue(visibleCats.any { it.key == "custom_deep_plough" })
     }
 }

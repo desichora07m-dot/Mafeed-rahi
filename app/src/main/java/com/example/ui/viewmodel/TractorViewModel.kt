@@ -24,12 +24,12 @@ import java.util.Calendar
 class TractorViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = TractorRepository.getRepository(application)
 
-    // Language state: true = Hindi, false = English
-    private val _isHindi = MutableStateFlow(true)
+    // Language state: defaults to false (English only)
+    private val _isHindi = MutableStateFlow(false)
     val isHindi: StateFlow<Boolean> = _isHindi.asStateFlow()
 
     // Owner profile
-    private val _ownerName = MutableStateFlow("Rajesh Patel (राजेश पटेल)")
+    private val _ownerName = MutableStateFlow("Rajesh Patel")
     val ownerName: StateFlow<String> = _ownerName.asStateFlow()
 
     private val _tractorModel = MutableStateFlow("Mahindra 575 DI")
@@ -50,8 +50,16 @@ class TractorViewModel(application: Application) : AndroidViewModel(application)
     private val _editingWorkEntry = MutableStateFlow<WorkEntry?>(null)
     val editingWorkEntry: StateFlow<WorkEntry?> = _editingWorkEntry.asStateFlow()
 
-    // Data Streams
+    // Last backup timestamp
+    private val _lastBackupTimeMillis = MutableStateFlow(repository.getLastBackupTime())
+    val lastBackupTimeMillis: StateFlow<Long> = _lastBackupTimeMillis.asStateFlow()
+
+    // All categories in DB
     val categories: StateFlow<List<WorkCategory>> = repository.allCategories
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 5 Default + Custom categories for the Work Selection Screen
+    val visibleCategories: StateFlow<List<WorkCategory>> = repository.visibleCategories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val customers: StateFlow<List<Customer>> = repository.allCustomers
@@ -180,7 +188,7 @@ class TractorViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun addCustomer(name: String, phone: String, village: String, onComplete: (Long) -> Unit = {}) {
+    fun addCustomer(name: String, phone: String = "", village: String = "", onComplete: (Long) -> Unit = {}) {
         viewModelScope.launch {
             val customer = Customer(name = name.trim(), phone = phone.trim(), village = village.trim())
             val id = repository.insertCustomer(customer)
@@ -234,19 +242,26 @@ class TractorViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun addCustomCategory(nameEn: String, nameHi: String, rate: Double, unit: RateUnit, drawableName: String) {
+    fun addCustomCategory(
+        name: String,
+        rate: Double,
+        unit: RateUnit,
+        drawableName: String = "ic_work_custom",
+        onComplete: (WorkCategory) -> Unit = {}
+    ) {
         viewModelScope.launch {
             val key = "custom_${System.currentTimeMillis()}"
             val newCategory = WorkCategory(
                 key = key,
-                nameEn = nameEn.trim(),
-                nameHi = if (nameHi.isBlank()) nameEn.trim() else nameHi.trim(),
+                nameEn = name.trim(),
+                nameHi = name.trim(),
                 drawableName = drawableName,
                 defaultRate = rate,
                 defaultUnit = unit.id,
                 isCustom = true
             )
-            repository.saveCategory(newCategory)
+            val id = repository.saveCategory(newCategory)
+            onComplete(newCategory.copy(id = id))
         }
     }
 
@@ -259,17 +274,31 @@ class TractorViewModel(application: Application) : AndroidViewModel(application)
     fun resetData(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             repository.resetDatabase()
+            _lastBackupTimeMillis.value = repository.getLastBackupTime()
             onComplete()
         }
     }
 
     suspend fun exportBackupJson(): String {
-        return repository.exportDataAsJson()
+        val json = repository.exportDataAsJson()
+        _lastBackupTimeMillis.value = repository.getLastBackupTime()
+        return json
+    }
+
+    suspend fun exportWorkEntriesCsv(): String {
+        return repository.exportWorkEntriesCsv()
+    }
+
+    suspend fun exportCustomerLedgersCsv(): String {
+        return repository.exportCustomerLedgersCsv()
     }
 
     fun restoreBackupJson(json: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val result = repository.importDataFromJson(json)
+            if (result) {
+                _lastBackupTimeMillis.value = repository.getLastBackupTime()
+            }
             onResult(result)
         }
     }

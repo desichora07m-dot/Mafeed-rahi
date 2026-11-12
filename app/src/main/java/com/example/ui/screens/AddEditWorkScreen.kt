@@ -19,18 +19,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -42,9 +38,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +51,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -82,6 +79,7 @@ import com.example.data.model.PaymentStatus
 import com.example.data.model.RateUnit
 import com.example.data.model.WorkCategory
 import com.example.data.model.WorkEntry
+import com.example.ui.components.OtherWorkGridCard
 import com.example.ui.components.WorkCategoryGridCard
 import com.example.ui.theme.StatusOverdueBg
 import com.example.ui.theme.StatusOverdueRed
@@ -106,9 +104,8 @@ fun AddEditWorkScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val isHindi by viewModel.isHindi.collectAsState()
     val customers by viewModel.customers.collectAsState()
-    val categories by viewModel.categories.collectAsState()
+    val visibleCategories by viewModel.visibleCategories.collectAsState()
 
     // Handle Android system back
     BackHandler { onNavigateBack() }
@@ -117,38 +114,57 @@ fun AddEditWorkScreen(
     var selectedCustomer by remember { mutableStateOf<Customer?>(null) }
     var selectedCategory by remember { mutableStateOf<WorkCategory?>(null) }
 
-    var hours by remember { mutableIntStateOf(0) }
-    var minutes by remember { mutableIntStateOf(20) } // Default 20 mins for fast entry
+    // Manual Working Time (Hours and Minutes)
+    var hoursText by remember { mutableStateOf("0") }
+    var minutesText by remember { mutableStateOf("20") }
 
+    // Completely Flexible Rate
     var customRateText by remember { mutableStateOf("15") }
     var selectedRateUnit by remember { mutableStateOf(RateUnit.PER_MINUTE) }
 
+    // Payment details
     var paymentStatus by remember { mutableStateOf(PaymentStatus.PAID) }
     var amountReceivedText by remember { mutableStateOf("") }
     var paymentMethod by remember { mutableStateOf("CASH") }
 
+    // Date & Notes
     var workDateMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var showDatePickerDialog by remember { mutableStateOf(false) }
     var notesText by remember { mutableStateOf("") }
 
-    // Dialog state for adding a customer
+    // Dialog state for adding a customer (Only Name required)
     var showAddCustomerDialog by remember { mutableStateOf(false) }
     var newCustomerName by remember { mutableStateOf("") }
-    var newCustomerPhone by remember { mutableStateOf("") }
-    var newCustomerVillage by remember { mutableStateOf("") }
 
     // Customer picker sheet
     var showCustomerPicker by remember { mutableStateOf(false) }
 
+    // Dialog for adding custom "Other Work"
+    var showOtherWorkDialog by remember { mutableStateOf(false) }
+    var customWorkName by remember { mutableStateOf("") }
+    var customWorkRate by remember { mutableStateOf("15") }
+    var customWorkUnit by remember { mutableStateOf(RateUnit.PER_MINUTE) }
+
+    // Double-tap submission guard
+    var isSaving by remember { mutableStateOf(false) }
+
     // Initialize if editing existing entry
-    LaunchedEffect(existingEntry, customers, categories) {
+    LaunchedEffect(existingEntry, customers, visibleCategories) {
         if (existingEntry != null) {
             selectedCustomer = customers.find { it.id == existingEntry.customerId }
                 ?: Customer(id = existingEntry.customerId, name = existingEntry.customerName)
-            selectedCategory = categories.find { it.key == existingEntry.categoryKey }
-                ?: categories.firstOrNull()
+            selectedCategory = visibleCategories.find { it.key == existingEntry.categoryKey }
+                ?: WorkCategory(
+                    key = existingEntry.categoryKey,
+                    nameEn = existingEntry.categoryName,
+                    nameHi = existingEntry.categoryName,
+                    drawableName = existingEntry.categoryDrawable,
+                    defaultRate = existingEntry.rate,
+                    defaultUnit = existingEntry.rateUnit
+                )
 
-            hours = existingEntry.hours
-            minutes = existingEntry.minutes
+            hoursText = existingEntry.hours.toString()
+            minutesText = existingEntry.minutes.toString()
             customRateText = if (existingEntry.rate % 1.0 == 0.0) existingEntry.rate.toInt().toString() else existingEntry.rate.toString()
             selectedRateUnit = existingEntry.getParsedUnit()
             paymentStatus = existingEntry.getParsedStatus()
@@ -159,31 +175,35 @@ fun AddEditWorkScreen(
             if (selectedCustomer == null && customers.isNotEmpty()) {
                 selectedCustomer = customers.first()
             }
-            if (selectedCategory == null && categories.isNotEmpty()) {
-                val defaultCat = categories.find { it.key == "rotavator" } ?: categories.first()
-                selectedCategory = defaultCat
-                customRateText = if (defaultCat.defaultRate % 1.0 == 0.0) defaultCat.defaultRate.toInt().toString() else defaultCat.defaultRate.toString()
-                selectedRateUnit = defaultCat.getParsedUnit()
+            if (selectedCategory == null && visibleCategories.isNotEmpty()) {
+                val rotavator = visibleCategories.find { it.key == "rotavator" } ?: visibleCategories.first()
+                selectedCategory = rotavator
+                customRateText = if (rotavator.defaultRate % 1.0 == 0.0) rotavator.defaultRate.toInt().toString() else rotavator.defaultRate.toString()
+                selectedRateUnit = rotavator.getParsedUnit()
             }
         }
     }
 
-    // Live Calculation
+    // Parsed Duration in Minutes
     val totalDurationMinutes by remember {
-        derivedStateOf { (hours * 60) + minutes }
+        derivedStateOf {
+            val h = hoursText.toIntOrNull() ?: 0
+            val m = minutesText.toIntOrNull() ?: 0
+            (h * 60) + m
+        }
     }
 
     val parsedRate by remember {
         derivedStateOf { customRateText.toDoubleOrNull() ?: 0.0 }
     }
 
+    // Live Automatic Earning Calculation
     val totalCalculatedAmount by remember {
         derivedStateOf {
             FormatUtils.calculateTotalAmount(totalDurationMinutes, parsedRate, selectedRateUnit)
         }
     }
 
-    // Auto calculate pending based on payment status
     val amountReceived by remember {
         derivedStateOf {
             when (paymentStatus) {
@@ -224,28 +244,27 @@ fun AddEditWorkScreen(
                         modifier = Modifier.testTag("add_work_back_btn")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
 
                     Text(
-                        text = if (existingEntry != null) LocaleHelper.getString("edit_work_title", isHindi)
-                        else LocaleHelper.getString("new_work_title", isHindi),
+                        text = if (existingEntry != null) "Edit Work Record" else "Record Tractor Work",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            fontSize = 19.sp
+                            fontSize = 20.sp
                         )
                     )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Prominent Calculation Result Banner (Large & High Contrast)
+                // Prominent Calculation Result Banner
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = Color.White,
@@ -260,7 +279,7 @@ fun AddEditWorkScreen(
                     ) {
                         Column {
                             Text(
-                                text = LocaleHelper.getString("calculated_total", isHindi),
+                                text = "CALCULATED TOTAL",
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     color = Color.Gray,
                                     fontWeight = FontWeight.Bold
@@ -268,13 +287,13 @@ fun AddEditWorkScreen(
                             )
                             Text(
                                 text = when (selectedRateUnit) {
-                                    RateUnit.PER_MINUTE -> "$totalDurationMinutes ${LocaleHelper.getString("minutes", isHindi)} × ₹$parsedRate"
-                                    RateUnit.PER_HOUR -> "${String.format("%.1f", totalDurationMinutes / 60.0)} ${LocaleHelper.getString("hours", isHindi)} × ₹$parsedRate"
-                                    RateUnit.FIXED -> "फिक्स दर (Fixed)"
+                                    RateUnit.PER_MINUTE -> "$totalDurationMinutes min × ₹$parsedRate"
+                                    RateUnit.PER_HOUR -> "${String.format("%.2f", totalDurationMinutes / 60.0)} hr × ₹$parsedRate"
+                                    RateUnit.FIXED -> "Fixed Amount"
                                 },
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = Color.DarkGray,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             )
                         }
@@ -301,7 +320,7 @@ fun AddEditWorkScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // STEP 1: CUSTOMER SELECTION
+            // STEP 1: SELECT CUSTOMER
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -315,7 +334,7 @@ fun AddEditWorkScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = LocaleHelper.getString("step_customer", isHindi),
+                            text = "1. Select Customer",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = TractorGreenPrimary
@@ -329,17 +348,17 @@ fun AddEditWorkScreen(
                             Icon(imageVector = Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = LocaleHelper.getString("add_new_customer", isHindi),
+                                text = "+ Add Customer",
                                 fontWeight = FontWeight.Bold,
                                 color = TractorGreenPrimary,
-                                fontSize = 12.sp
+                                fontSize = 13.sp
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Selected Customer Card / Selector
+                    // Selected Customer Selector
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = Color(0xFFF1F8E9),
@@ -355,7 +374,7 @@ fun AddEditWorkScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
                                     .background(TractorGreenPrimary),
                                 contentAlignment = Alignment.Center
@@ -364,7 +383,7 @@ fun AddEditWorkScreen(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
 
@@ -372,23 +391,26 @@ fun AddEditWorkScreen(
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = selectedCustomer?.name ?: (if (isHindi) "ग्राहक चुनें..." else "Select Customer..."),
+                                    text = selectedCustomer?.name ?: "Select Customer...",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
+                                        fontSize = 16.sp,
                                         color = Color(0xFF1B5E20)
                                     )
                                 )
                                 if (selectedCustomer?.village?.isNotBlank() == true || selectedCustomer?.phone?.isNotBlank() == true) {
                                     Text(
-                                        text = "${selectedCustomer?.village} ${if (selectedCustomer?.phone?.isNotBlank() == true) "• ${selectedCustomer?.phone}" else ""}",
+                                        text = listOfNotNull(
+                                            selectedCustomer?.village.takeIf { it?.isNotBlank() == true },
+                                            selectedCustomer?.phone.takeIf { it?.isNotBlank() == true }
+                                        ).joinToString(" • "),
                                         style = MaterialTheme.typography.bodySmall.copy(color = Color.DarkGray)
                                     )
                                 }
                             }
 
                             Text(
-                                text = if (isHindi) "बदलें ▾" else "Change ▾",
+                                text = "Change ▾",
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     color = TractorGreenPrimary,
                                     fontWeight = FontWeight.Bold
@@ -399,7 +421,7 @@ fun AddEditWorkScreen(
                 }
             }
 
-            // STEP 2: AGRICULTURAL WORK CATEGORY (2-column grid)
+            // STEP 2: AGRICULTURAL WORK CATEGORY (5 Defaults + Custom + Other Work)
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -408,35 +430,66 @@ fun AddEditWorkScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = LocaleHelper.getString("step_category", isHindi),
+                        text = "2. Select Agricultural Work",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TractorGreenPrimary
                         )
                     )
+                    Text(
+                        text = "Realistic photography for all 5 farm operations",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                    )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // 2-Column Grid of 8 default categories
-                    val chunked = categories.chunked(2)
-                    chunked.forEach { pair ->
+                    // 2-Column Grid
+                    val itemsToDisplay = visibleCategories
+                    val totalCards = itemsToDisplay.size + 1 // +1 for "Other Work"
+                    val pairs = mutableListOf<List<Any>>()
+                    var i = 0
+                    while (i < totalCards) {
+                        val row = mutableListOf<Any>()
+                        if (i < itemsToDisplay.size) {
+                            row.add(itemsToDisplay[i])
+                        } else {
+                            row.add("OTHER_WORK")
+                        }
+                        if (i + 1 < totalCards) {
+                            if (i + 1 < itemsToDisplay.size) {
+                                row.add(itemsToDisplay[i + 1])
+                            } else {
+                                row.add("OTHER_WORK")
+                            }
+                        }
+                        pairs.add(row)
+                        i += 2
+                    }
+
+                    pairs.forEach { pair ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            for (cat in pair) {
-                                WorkCategoryGridCard(
-                                    category = cat,
-                                    isSelected = selectedCategory?.key == cat.key,
-                                    isHindi = isHindi,
-                                    onSelect = {
-                                        selectedCategory = cat
-                                        // Update custom rate with this category's default rate and unit
-                                        customRateText = if (cat.defaultRate % 1.0 == 0.0) cat.defaultRate.toInt().toString() else cat.defaultRate.toString()
-                                        selectedRateUnit = cat.getParsedUnit()
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
+                            for (item in pair) {
+                                if (item is WorkCategory) {
+                                    WorkCategoryGridCard(
+                                        category = item,
+                                        isSelected = selectedCategory?.key == item.key,
+                                        onSelect = {
+                                            selectedCategory = item
+                                            customRateText = if (item.defaultRate % 1.0 == 0.0) item.defaultRate.toInt().toString() else item.defaultRate.toString()
+                                            selectedRateUnit = item.getParsedUnit()
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                } else {
+                                    OtherWorkGridCard(
+                                        isSelected = false,
+                                        onClick = { showOtherWorkDialog = true },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
                             }
                             if (pair.size == 1) {
                                 Spacer(modifier = Modifier.weight(1f))
@@ -447,7 +500,7 @@ fun AddEditWorkScreen(
                 }
             }
 
-            // STEP 3: WORKING DURATION (Hours and Minutes)
+            // STEP 3: WORK DATE
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -456,69 +509,141 @@ fun AddEditWorkScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = LocaleHelper.getString("step_duration", isHindi),
+                        text = "3. Select Work Date",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TractorGreenPrimary
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF9FAF8),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePickerDialog = true }
+                            .testTag("work_date_selector")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = TractorGreenPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = FormatUtils.formatDateWithDay(workDateMillis),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF1B5E20)
+                                )
+                            }
+
+                            Row {
+                                TextButton(onClick = { workDateMillis = System.currentTimeMillis() - 86400000L }) {
+                                    Text("Yesterday", fontSize = 12.sp)
+                                }
+                                TextButton(onClick = { workDateMillis = System.currentTimeMillis() }) {
+                                    Text("Today", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // STEP 4: MANUAL WORKING TIME ENTRY (HOURS & MINUTES)
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "4. Enter Working Duration",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TractorGreenPrimary
+                        )
+                    )
+                    Text(
+                        text = "Enter any exact hours and minutes (e.g. 0h 17m, 1h 20m, 2h 45m)",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Hours Spinner
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        // Hours Input Box
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = LocaleHelper.getString("hours", isHindi),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.DarkGray
-                                )
+                                text = "Hours",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = Color.DarkGray)
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Surface(
                                     shape = CircleShape,
                                     color = Color(0xFFF1F8E9),
                                     modifier = Modifier
-                                        .size(42.dp)
-                                        .clickable { if (hours > 0) hours-- }
-                                        .testTag("hours_decrement_btn")
+                                        .size(38.dp)
+                                        .clickable {
+                                            val current = hoursText.toIntOrNull() ?: 0
+                                            if (current > 0) hoursText = (current - 1).toString()
+                                        }
+                                        .testTag("hours_minus_btn")
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(imageVector = Icons.Default.Remove, contentDescription = "-1 Hr", tint = TractorGreenPrimary)
                                     }
                                 }
 
-                                Text(
-                                    text = "$hours",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 26.sp,
+                                OutlinedTextField(
+                                    value = hoursText,
+                                    onValueChange = { input ->
+                                        if (input.all { it.isDigit() }) hoursText = input
+                                    },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    textStyle = MaterialTheme.typography.titleLarge.copy(
+                                        textAlign = TextAlign.Center,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp,
                                         color = TractorGreenPrimary
                                     ),
-                                    textAlign = TextAlign.Center,
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier
-                                        .width(55.dp)
-                                        .testTag("hours_value_text")
+                                        .weight(1f)
+                                        .padding(horizontal = 6.dp)
+                                        .testTag("hours_input_field")
                                 )
 
                                 Surface(
                                     shape = CircleShape,
                                     color = Color(0xFFF1F8E9),
                                     modifier = Modifier
-                                        .size(42.dp)
-                                        .clickable { hours++ }
-                                        .testTag("hours_increment_btn")
+                                        .size(38.dp)
+                                        .clickable {
+                                            val current = hoursText.toIntOrNull() ?: 0
+                                            hoursText = (current + 1).toString()
+                                        }
+                                        .testTag("hours_plus_btn")
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(imageVector = Icons.Default.Add, contentDescription = "+1 Hr", tint = TractorGreenPrimary)
@@ -527,60 +652,64 @@ fun AddEditWorkScreen(
                             }
                         }
 
-                        // Minutes Spinner
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        // Minutes Input Box
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = LocaleHelper.getString("minutes", isHindi),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.DarkGray
-                                )
+                                text = "Minutes",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = Color.DarkGray)
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Surface(
                                     shape = CircleShape,
                                     color = Color(0xFFF1F8E9),
                                     modifier = Modifier
-                                        .size(42.dp)
+                                        .size(38.dp)
                                         .clickable {
-                                            minutes = if (minutes >= 5) (minutes - 5) else 0
+                                            val current = minutesText.toIntOrNull() ?: 0
+                                            if (current >= 5) minutesText = (current - 5).toString()
+                                            else minutesText = "0"
                                         }
-                                        .testTag("minutes_decrement_btn")
+                                        .testTag("minutes_minus_btn")
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(imageVector = Icons.Default.Remove, contentDescription = "-5 Min", tint = TractorGreenPrimary)
                                     }
                                 }
 
-                                Text(
-                                    text = "$minutes",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 26.sp,
+                                OutlinedTextField(
+                                    value = minutesText,
+                                    onValueChange = { input ->
+                                        if (input.all { it.isDigit() }) minutesText = input
+                                    },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    textStyle = MaterialTheme.typography.titleLarge.copy(
+                                        textAlign = TextAlign.Center,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp,
                                         color = TractorGreenPrimary
                                     ),
-                                    textAlign = TextAlign.Center,
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier
-                                        .width(55.dp)
-                                        .testTag("minutes_value_text")
+                                        .weight(1f)
+                                        .padding(horizontal = 6.dp)
+                                        .testTag("minutes_input_field")
                                 )
 
                                 Surface(
                                     shape = CircleShape,
                                     color = Color(0xFFF1F8E9),
                                     modifier = Modifier
-                                        .size(42.dp)
+                                        .size(38.dp)
                                         .clickable {
-                                            minutes = (minutes + 5).coerceAtMost(59)
+                                            val current = minutesText.toIntOrNull() ?: 0
+                                            minutesText = (current + 5).toString()
                                         }
-                                        .testTag("minutes_increment_btn")
+                                        .testTag("minutes_plus_btn")
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(imageVector = Icons.Default.Add, contentDescription = "+5 Min", tint = TractorGreenPrimary)
@@ -590,55 +719,19 @@ fun AddEditWorkScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Fast Duration Preset Chips (Common agricultural field durations)
                     Text(
-                        text = if (isHindi) "त्वरित समय चुनें (Quick Add):" else "Quick Presets:",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val presets = listOf(
-                            Pair("15m", 15),
-                            Pair("20m", 20),
-                            Pair("30m", 30),
-                            Pair("45m", 45),
-                            Pair("1h", 60),
-                            Pair("1h 30m", 90),
-                            Pair("2h", 120),
-                            Pair("3h", 180)
+                        text = "Total Duration: ${FormatUtils.formatDuration(totalDurationMinutes)} ($totalDurationMinutes minutes)",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Color(0xFF1B5E20),
+                            fontWeight = FontWeight.Bold
                         )
-                        presets.forEach { (label, totalMins) ->
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = if (totalDurationMinutes == totalMins) TractorGreenPrimary else Color(0xFFEFF3EE),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        hours = totalMins / 60
-                                        minutes = totalMins % 60
-                                    }
-                            ) {
-                                Text(
-                                    text = label,
-                                    color = if (totalDurationMinutes == totalMins) Color.White else Color(0xFF1B5E20),
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                    }
+                    )
                 }
             }
 
-            // STEP 4: CUSTOM RATE SYSTEM (NO FIXED PRICE LIMIT)
+            // STEP 5: COMPLETELY FLEXIBLE RATE SYSTEM
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -647,115 +740,89 @@ fun AddEditWorkScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = LocaleHelper.getString("step_rate", isHindi),
+                        text = "5. Select Rate Type & Enter Rate",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TractorGreenPrimary
                         )
                     )
                     Text(
-                        text = if (isHindi) "कोई भी दर अपनी मर्जी से डालें (₹5, ₹10, ₹15, ₹50, ₹800 आदि)"
-                        else "Enter any custom rate without limit (₹5, ₹15, ₹50, ₹800 etc)",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray, fontSize = 11.sp)
+                        text = "Enter any rate without restriction (₹5, ₹15, ₹50, ₹800, ₹1500 etc.)",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Rate Input & Unit Row
+                    // Rate Type Chips (Per Minute, Per Hour, Fixed Amount)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedTextField(
-                            value = customRateText,
-                            onValueChange = { customRateText = it },
-                            label = { Text(LocaleHelper.getString("custom_rate", isHindi)) },
-                            prefix = { Text("₹", fontWeight = FontWeight.Bold, color = TractorGreenPrimary) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .weight(1.2f)
-                                .testTag("custom_rate_input")
-                        )
-
-                        // Rate Unit Toggle Chips
-                        Column(modifier = Modifier.weight(1.8f)) {
-                            RateUnit.entries.forEach { unit ->
-                                val isSelected = selectedRateUnit == unit
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = if (isSelected) TractorGreenPrimary else Color(0xFFF1F5EE),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 2.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable { selectedRateUnit = unit }
-                                        .testTag("rate_unit_${unit.id}")
+                        RateUnit.entries.forEach { unit ->
+                            val isSelected = selectedRateUnit == unit
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) TractorGreenPrimary else Color(0xFFF1F5EE),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { selectedRateUnit = unit }
+                                    .testTag("rate_unit_${unit.id}")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                                    if (isSelected) {
                                         Icon(
-                                            imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.Check,
+                                            imageVector = Icons.Default.Check,
                                             contentDescription = null,
-                                            tint = if (isSelected) Color.White else Color.Transparent,
+                                            tint = Color.White,
                                             modifier = Modifier.size(14.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = if (isHindi) unit.labelHi else unit.labelEn,
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                color = if (isSelected) Color.White else Color(0xFF2E7D32),
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 11.sp
-                                            )
-                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
                                     }
+                                    Text(
+                                        text = unit.labelEn,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = if (isSelected) Color.White else Color(0xFF2E7D32),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp
+                                        )
+                                    )
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Quick Rate Short-Cuts
-                    Text(
-                        text = if (isHindi) "अक्सर इस्तेमाल दरें:" else "Quick Rates:",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
+                    // Custom Rate Manual Input
+                    OutlinedTextField(
+                        value = customRateText,
+                        onValueChange = { customRateText = it },
+                        label = { Text("Enter Custom Rate") },
+                        prefix = { Text("₹", fontWeight = FontWeight.Bold, color = TractorGreenPrimary) },
+                        suffix = {
+                            Text(
+                                text = " / ${selectedRateUnit.labelEn}",
+                                color = Color.Gray,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("custom_rate_input")
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        val ratePresets = listOf("10", "12", "15", "18", "20", "22", "500", "800", "900", "1000", "1200")
-                        ratePresets.forEach { r ->
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (customRateText == r) TractorGold else Color(0xFFEFF3EE),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { customRateText = r }
-                            ) {
-                                Text(
-                                    text = "₹$r",
-                                    color = if (customRateText == r) Color.White else Color(0xFF333333),
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                                )
-                            }
-                        }
-                    }
                 }
             }
 
-            // STEP 5: PAYMENT STATUS & RECEIVED AMOUNT
+            // STEP 6: PAYMENT STATUS & SUMMARY
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -764,7 +831,7 @@ fun AddEditWorkScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = LocaleHelper.getString("step_payment", isHindi),
+                        text = "6. Payment Status",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TractorGreenPrimary
@@ -796,7 +863,7 @@ fun AddEditWorkScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = LocaleHelper.getString("paid", isHindi),
+                                    text = "Paid (Full)",
                                     color = if (paymentStatus == PaymentStatus.PAID) Color.White else StatusPaidGreen,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
@@ -829,13 +896,13 @@ fun AddEditWorkScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = LocaleHelper.getString("partial", isHindi),
+                                    text = "Partial",
                                     color = if (paymentStatus == PaymentStatus.PARTIAL) Color.White else StatusPendingOrange,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
                                 )
                                 Text(
-                                    text = if (isHindi) "आधा या कुछ" else "Some Paid",
+                                    text = "Some Paid",
                                     color = if (paymentStatus == PaymentStatus.PARTIAL) Color.White.copy(alpha = 0.85f) else Color.Gray,
                                     fontSize = 11.sp
                                 )
@@ -860,13 +927,13 @@ fun AddEditWorkScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = LocaleHelper.getString("unpaid", isHindi),
+                                    text = "Unpaid",
                                     color = if (paymentStatus == PaymentStatus.UNPAID) Color.White else StatusOverdueRed,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
                                 )
                                 Text(
-                                    text = if (isHindi) "बाकी उधार" else "All Due",
+                                    text = "All Due",
                                     color = if (paymentStatus == PaymentStatus.UNPAID) Color.White.copy(alpha = 0.85f) else Color.Gray,
                                     fontSize = 11.sp
                                 )
@@ -880,7 +947,7 @@ fun AddEditWorkScreen(
                             OutlinedTextField(
                                 value = amountReceivedText,
                                 onValueChange = { amountReceivedText = it },
-                                label = { Text(LocaleHelper.getString("amount_received", isHindi)) },
+                                label = { Text("Amount Received (₹)") },
                                 prefix = { Text("₹", fontWeight = FontWeight.Bold) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -897,7 +964,7 @@ fun AddEditWorkScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "${LocaleHelper.getString("balance_pending", isHindi)}:",
+                                    text = "Remaining Due:",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                 )
                                 Text(
@@ -919,11 +986,11 @@ fun AddEditWorkScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (isHindi) "माध्यम:" else "Method:",
+                                text = "Method:",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
-                            listOf("CASH" to (if (isHindi) "नगद (Cash)" else "Cash"), "UPI" to "UPI (PhonePe/GPay)").forEach { (m, label) ->
+                            listOf("CASH" to "Cash", "UPI" to "UPI / Online").forEach { (m, label) ->
                                 val isSelected = paymentMethod == m
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
@@ -937,65 +1004,19 @@ fun AddEditWorkScreen(
                                         text = label,
                                         color = if (isSelected) Color.White else Color.DarkGray,
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
                                 }
                             }
                         }
                     }
-                }
-            }
 
-            // STEP 6: NOTES & WORK DATE
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(2.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = if (isHindi) "६. तारीख व नोट" else "6. Date & Notes",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = TractorGreenPrimary
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Date display & quick picker
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = TractorGreenPrimary)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = FormatUtils.formatDateWithDay(workDateMillis, isHindi),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-
-                        Row {
-                            TextButton(onClick = { workDateMillis = System.currentTimeMillis() - 86400000L }) {
-                                Text(if (isHindi) "कल" else "Yesterday", fontSize = 12.sp)
-                            }
-                            TextButton(onClick = { workDateMillis = System.currentTimeMillis() }) {
-                                Text(if (isHindi) "आज" else "Today", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     OutlinedTextField(
                         value = notesText,
                         onValueChange = { notesText = it },
-                        placeholder = { Text(LocaleHelper.getString("notes_optional", isHindi)) },
+                        placeholder = { Text("Field location / notes (optional)") },
                         singleLine = false,
                         maxLines = 2,
                         shape = RoundedCornerShape(12.dp),
@@ -1006,10 +1027,74 @@ fun AddEditWorkScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // SUMMARY CARD
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, TractorGreenPrimary.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "WORK SUMMARY",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = TractorGreenPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Customer:", color = Color.Gray, fontSize = 13.sp)
+                        Text(selectedCustomer?.name ?: "-", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Work Category:", color = Color.Gray, fontSize = 13.sp)
+                        Text(selectedCategory?.nameEn ?: "-", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Working Duration:", color = Color.Gray, fontSize = 13.sp)
+                        Text(FormatUtils.formatDuration(totalDurationMinutes), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Rate:", color = Color.Gray, fontSize = 13.sp)
+                        Text("₹$parsedRate / ${selectedRateUnit.shortUnitEn}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = Color(0xFFC5E1A5))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Total Bill:", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text(FormatUtils.formatCurrency(totalCalculatedAmount), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TractorGreenPrimary)
+                    }
+                    if (amountPending > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Pending Balance Due:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = StatusOverdueRed)
+                            Text(FormatUtils.formatCurrency(amountPending), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = StatusOverdueRed)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
-        // Bottom Sticky Action Button: Large Save Work Button
+        // STEP 7: PROMINENT SAVE BUTTON
         Surface(
             color = Color.White,
             shadowElevation = 8.dp,
@@ -1022,32 +1107,34 @@ fun AddEditWorkScreen(
             ) {
                 Button(
                     onClick = {
+                        if (isSaving) return@Button
                         val cust = selectedCustomer
                         val cat = selectedCategory
 
                         if (cust == null) {
-                            Toast.makeText(context, if (isHindi) "कृपया ग्राहक चुनें" else "Please select customer", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please select customer", Toast.LENGTH_SHORT).show()
                             showCustomerPicker = true
                             return@Button
                         }
 
                         if (cat == null) {
-                            Toast.makeText(context, if (isHindi) "कृपया काम चुनें" else "Please select work category", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please select work category", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
                         if (totalDurationMinutes <= 0) {
-                            Toast.makeText(context, if (isHindi) "कृपया समय (घंटा/मिनट) दर्ज करें" else "Please enter duration", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please enter working duration (hours/minutes)", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
+                        isSaving = true
                         val entry = WorkEntry(
                             id = existingEntry?.id ?: 0L,
                             customerId = cust.id,
                             customerName = cust.name,
                             categoryId = cat.id,
                             categoryKey = cat.key,
-                            categoryName = if (isHindi) "${cat.nameHi} (${cat.nameEn})" else "${cat.nameEn} (${cat.nameHi})",
+                            categoryName = cat.nameEn,
                             categoryDrawable = cat.drawableName,
                             durationMinutes = totalDurationMinutes,
                             rate = parsedRate,
@@ -1061,16 +1148,14 @@ fun AddEditWorkScreen(
                         )
 
                         viewModel.saveWork(entry, paymentMethod) {
-                            Toast.makeText(
-                                context,
-                                if (isHindi) "✅ काम हिसाब सफलतापूर्वक सुरक्षित हुआ!" else "✅ Work record saved successfully!",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, "✅ Work record saved successfully!", Toast.LENGTH_SHORT).show()
+                            isSaving = false
                             onNavigateBack()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
                     shape = RoundedCornerShape(16.dp),
+                    enabled = !isSaving,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
@@ -1079,8 +1164,8 @@ fun AddEditWorkScreen(
                     Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = if (existingEntry != null) LocaleHelper.getString("save_changes", isHindi)
-                        else "${LocaleHelper.getString("save_work", isHindi)}  •  ${FormatUtils.formatCurrency(totalCalculatedAmount)}",
+                        text = if (existingEntry != null) "SAVE CHANGES"
+                        else "SAVE WORK  •  ${FormatUtils.formatCurrency(totalCalculatedAmount)}",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -1089,6 +1174,36 @@ fun AddEditWorkScreen(
                     )
                 }
             }
+        }
+    }
+
+    // Modal: DatePicker Dialog
+    if (showDatePickerDialog) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = workDateMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePickerDialog = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let {
+                            workDateMillis = it
+                        }
+                        showDatePickerDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePickerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 
@@ -1103,7 +1218,7 @@ fun AddEditWorkScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isHindi) "ग्राहक चुनें" else "Select Customer",
+                        text = "Select Customer",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     IconButton(onClick = {
@@ -1123,7 +1238,7 @@ fun AddEditWorkScreen(
                 ) {
                     if (customers.isEmpty()) {
                         Text(
-                            text = if (isHindi) "कोई ग्राहक नहीं मिला। नया ग्राहक जोड़ें।" else "No customers found. Add a new customer.",
+                            text = "No customers found. Tap + Add Customer to create one.",
                             style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray),
                             modifier = Modifier.padding(16.dp)
                         )
@@ -1148,7 +1263,7 @@ fun AddEditWorkScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(32.dp)
+                                            .size(34.dp)
                                             .clip(CircleShape)
                                             .background(TractorGreenPrimary),
                                         contentAlignment = Alignment.Center
@@ -1167,7 +1282,10 @@ fun AddEditWorkScreen(
                                         )
                                         if (c.village.isNotBlank() || c.phone.isNotBlank()) {
                                             Text(
-                                                text = "${c.village} ${if (c.phone.isNotBlank()) "• ${c.phone}" else ""}",
+                                                text = listOfNotNull(
+                                                    c.village.takeIf { it.isNotBlank() },
+                                                    c.phone.takeIf { it.isNotBlank() }
+                                                ).joinToString(" • "),
                                                 style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                                             )
                                         }
@@ -1186,24 +1304,24 @@ fun AddEditWorkScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
                 ) {
-                    Text(LocaleHelper.getString("add_new_customer", isHindi))
+                    Text("+ Add Customer")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCustomerPicker = false }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
+                    Text("Cancel")
                 }
             }
         )
     }
 
-    // Dialog: Add New Customer
+    // Dialog: Add New Customer (ONLY CUSTOMER NAME - Phase 4)
     if (showAddCustomerDialog) {
         AlertDialog(
             onDismissRequest = { showAddCustomerDialog = false },
             title = {
                 Text(
-                    text = LocaleHelper.getString("add_new_customer", isHindi),
+                    text = "Add Customer",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             },
@@ -1212,32 +1330,18 @@ fun AddEditWorkScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    Text(
+                        text = "Enter customer name to add:",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
+                    )
                     OutlinedTextField(
                         value = newCustomerName,
                         onValueChange = { newCustomerName = it },
-                        label = { Text(LocaleHelper.getString("enter_customer_name", isHindi)) },
+                        label = { Text("Customer Name") },
+                        placeholder = { Text("e.g. Ramesh Patel") },
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().testTag("new_customer_name_input")
-                    )
-
-                    OutlinedTextField(
-                        value = newCustomerPhone,
-                        onValueChange = { newCustomerPhone = it },
-                        label = { Text(LocaleHelper.getString("customer_phone", isHindi)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("new_customer_phone_input")
-                    )
-
-                    OutlinedTextField(
-                        value = newCustomerVillage,
-                        onValueChange = { newCustomerVillage = it },
-                        label = { Text(LocaleHelper.getString("customer_village", isHindi)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("new_customer_village_input")
                     )
                 }
             },
@@ -1245,31 +1349,130 @@ fun AddEditWorkScreen(
                 Button(
                     onClick = {
                         if (newCustomerName.trim().isNotBlank()) {
-                            viewModel.addCustomer(newCustomerName, newCustomerPhone, newCustomerVillage) { id ->
+                            viewModel.addCustomer(newCustomerName.trim()) { id ->
                                 selectedCustomer = Customer(
                                     id = id,
-                                    name = newCustomerName.trim(),
-                                    phone = newCustomerPhone.trim(),
-                                    village = newCustomerVillage.trim()
+                                    name = newCustomerName.trim()
                                 )
                                 newCustomerName = ""
-                                newCustomerPhone = ""
-                                newCustomerVillage = ""
                                 showAddCustomerDialog = false
                             }
                         } else {
-                            Toast.makeText(context, if (isHindi) "कृपया नाम दर्ज करें" else "Please enter name", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please enter customer name", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
                     modifier = Modifier.testTag("save_new_customer_btn")
                 ) {
-                    Text(LocaleHelper.getString("save", isHindi))
+                    Text("Save")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddCustomerDialog = false }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Dialog: Other Work (Custom Work Category - Phase 5)
+    if (showOtherWorkDialog) {
+        AlertDialog(
+            onDismissRequest = { showOtherWorkDialog = false },
+            title = {
+                Text(
+                    text = "Add Custom Work Category",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Enter any agricultural work name and default rate. It will be saved for future use.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                    )
+
+                    OutlinedTextField(
+                        value = customWorkName,
+                        onValueChange = { customWorkName = it },
+                        label = { Text("Work Name") },
+                        placeholder = { Text("e.g. Deep Ploughing, Bund Maker") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("custom_work_name_input")
+                    )
+
+                    OutlinedTextField(
+                        value = customWorkRate,
+                        onValueChange = { customWorkRate = it },
+                        label = { Text("Default Rate (₹)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Rate Unit
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RateUnit.entries.forEach { u ->
+                            val sel = customWorkUnit == u
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (sel) TractorGreenPrimary else Color(0xFFF1F5EE),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { customWorkUnit = u }
+                            ) {
+                                Text(
+                                    text = u.labelEn,
+                                    color = if (sel) Color.White else Color(0xFF1B5E20),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    ),
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (customWorkName.trim().isNotBlank()) {
+                            val rateVal = customWorkRate.toDoubleOrNull() ?: 15.0
+                            viewModel.addCustomCategory(
+                                name = customWorkName.trim(),
+                                rate = rateVal,
+                                unit = customWorkUnit
+                            ) { newCat ->
+                                selectedCategory = newCat
+                                customRateText = if (rateVal % 1.0 == 0.0) rateVal.toInt().toString() else rateVal.toString()
+                                selectedRateUnit = customWorkUnit
+                                customWorkName = ""
+                                showOtherWorkDialog = false
+                            }
+                        } else {
+                            Toast.makeText(context, "Please enter work name", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
+                ) {
+                    Text("Add & Select")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOtherWorkDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )

@@ -63,14 +63,12 @@ import com.example.ui.theme.TractorGold
 import com.example.ui.theme.TractorGreenPrimary
 import com.example.ui.viewmodel.TractorViewModel
 import com.example.util.FormatUtils
-import com.example.util.LocaleHelper
 
 @Composable
 fun ReportsScreen(
     viewModel: TractorViewModel
 ) {
     val context = LocalContext.current
-    val isHindi by viewModel.isHindi.collectAsState()
     val ownerName by viewModel.ownerName.collectAsState()
     val allWorkEntries by viewModel.allWorkEntries.collectAsState()
     val allPayments by viewModel.allPayments.collectAsState()
@@ -98,15 +96,16 @@ fun ReportsScreen(
     val totalPending = remember(filteredEntries) { filteredEntries.sumOf { it.amountPending } }
     val uniqueCustomers = remember(filteredEntries) { filteredEntries.map { it.customerId }.distinct().size }
 
-    // Category breakdown
+    // Work Category breakdown
     val categoryBreakdown = remember(filteredEntries) {
-        filteredEntries.groupBy { it.categoryKey }
-            .map { (key, entries) ->
-                Triple(
-                    entries.first().categoryName,
-                    entries.first().categoryDrawable,
-                    Pair(entries.sumOf { it.durationMinutes }, entries.sumOf { it.totalAmount })
-                )
+        filteredEntries
+            .groupBy { it.categoryKey }
+            .map { (key, list) ->
+                val name = list.first().categoryName
+                val drawable = list.first().categoryDrawable
+                val mins = list.sumOf { it.durationMinutes }
+                val earnings = list.sumOf { it.totalAmount }
+                Triple(name, drawable, Pair(mins, earnings))
             }
             .sortedByDescending { it.third.second }
     }
@@ -116,7 +115,7 @@ fun ReportsScreen(
             .fillMaxSize()
             .background(Color(0xFFF7F9F6))
             .padding(bottom = 80.dp)
-            .testTag("reports_screen_scroll")
+            .testTag("reports_scroll")
     ) {
         item {
             Column(
@@ -125,7 +124,7 @@ fun ReportsScreen(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = LocaleHelper.getString("reports_title", isHindi),
+                    text = "Earnings & Work Reports",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1B5E20)
@@ -148,7 +147,7 @@ fun ReportsScreen(
                         onClick = { selectedPeriodTab = 0 },
                         text = {
                             Text(
-                                text = LocaleHelper.getString("daily", isHindi),
+                                text = "Daily",
                                 fontWeight = if (selectedPeriodTab == 0) FontWeight.Bold else FontWeight.Medium
                             )
                         }
@@ -158,7 +157,7 @@ fun ReportsScreen(
                         onClick = { selectedPeriodTab = 1 },
                         text = {
                             Text(
-                                text = LocaleHelper.getString("weekly", isHindi),
+                                text = "Weekly (7 Days)",
                                 fontWeight = if (selectedPeriodTab == 1) FontWeight.Bold else FontWeight.Medium
                             )
                         }
@@ -168,7 +167,7 @@ fun ReportsScreen(
                         onClick = { selectedPeriodTab = 2 },
                         text = {
                             Text(
-                                text = LocaleHelper.getString("monthly", isHindi),
+                                text = "Monthly (30 Days)",
                                 fontWeight = if (selectedPeriodTab == 2) FontWeight.Bold else FontWeight.Medium
                             )
                         }
@@ -192,7 +191,7 @@ fun ReportsScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = LocaleHelper.getString("total_earnings", isHindi),
+                                    text = "Total Earnings",
                                     style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                                 )
                                 Text(
@@ -210,7 +209,7 @@ fun ReportsScreen(
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text(
-                                    text = FormatUtils.formatDuration(totalHoursMinutes, isHindi),
+                                    text = FormatUtils.formatDuration(totalHoursMinutes),
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = TractorGreenPrimary
@@ -221,27 +220,39 @@ fun ReportsScreen(
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(14.dp))
+                        HorizontalDivider(color = Color(0xFFF1F1F1))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        // Received, Pending, and Customers Served Stats
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text(LocaleHelper.getString("received_amount", isHindi), style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
-                                Text(FormatUtils.formatCurrency(totalReceived), fontWeight = FontWeight.Bold, color = StatusPaidGreen, fontSize = 15.sp)
+                                Text("Amount Received", style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
+                                Text(
+                                    text = FormatUtils.formatCurrency(totalReceived),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = StatusPaidGreen
+                                    )
+                                )
                             }
-
                             Column {
-                                Text(LocaleHelper.getString("pending_balance", isHindi), style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
-                                Text(FormatUtils.formatCurrency(totalPending), fontWeight = FontWeight.Bold, color = if (totalPending > 0) StatusOverdueRed else Color.Gray, fontSize = 15.sp)
+                                Text("Pending Balance", style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
+                                Text(
+                                    text = FormatUtils.formatCurrency(totalPending),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (totalPending > 0) StatusOverdueRed else Color.Gray
+                                    )
+                                )
                             }
-
                             Column {
-                                Text(LocaleHelper.getString("customers_served", isHindi), style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
-                                Text("$uniqueCustomers", fontWeight = FontWeight.Bold, color = Color.DarkGray, fontSize = 15.sp)
+                                Text("Customers", style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray))
+                                Text(
+                                    text = "$uniqueCustomers",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                )
                             }
                         }
                     }
@@ -257,26 +268,26 @@ fun ReportsScreen(
                     Button(
                         onClick = {
                             val periodName = when (selectedPeriodTab) {
-                                0 -> if (isHindi) "दैनिक रिपोर्ट" else "Daily Report"
-                                1 -> if (isHindi) "साप्ताहिक रिपोर्ट (7 दिन)" else "Weekly Report"
-                                else -> if (isHindi) "मासिक रिपोर्ट (30 दिन)" else "Monthly Report"
+                                0 -> "Daily Report"
+                                1 -> "Weekly Report (7 Days)"
+                                else -> "Monthly Report (30 Days)"
                             }
                             val sb = StringBuilder()
                             sb.appendLine("🚜 *Tractor Hisab - $periodName*")
                             sb.appendLine("━━━━━━━━━━━━━━━━━━")
-                            sb.appendLine("⏱️ काम समय: ${FormatUtils.formatDuration(totalHoursMinutes, isHindi)}")
-                            sb.appendLine("💵 कुल कमाई: ${FormatUtils.formatCurrency(totalEarnings)}")
-                            sb.appendLine("✅ कुल जमा: ${FormatUtils.formatCurrency(totalReceived)}")
-                            sb.appendLine("⚠️ बाकी बकाया: ${FormatUtils.formatCurrency(totalPending)}")
-                            sb.appendLine("👥 कुल ग्राहक: $uniqueCustomers")
+                            sb.appendLine("⏱️ Working Duration: ${FormatUtils.formatDuration(totalHoursMinutes)}")
+                            sb.appendLine("💵 Total Earnings: ${FormatUtils.formatCurrency(totalEarnings)}")
+                            sb.appendLine("✅ Total Received: ${FormatUtils.formatCurrency(totalReceived)}")
+                            sb.appendLine("⚠️ Pending Due: ${FormatUtils.formatCurrency(totalPending)}")
+                            sb.appendLine("👥 Customers Served: $uniqueCustomers")
                             sb.appendLine("━━━━━━━━━━━━━━━━━━")
-                            sb.appendLine("यंत्र-वार काम:")
+                            sb.appendLine("Work by Agricultural Category:")
                             categoryBreakdown.forEach { (name, _, data) ->
-                                sb.appendLine("• $name: ${FormatUtils.formatDuration(data.first, isHindi)} | ${FormatUtils.formatCurrency(data.second)}")
+                                sb.appendLine("• $name: ${FormatUtils.formatDuration(data.first)} | ${FormatUtils.formatCurrency(data.second)}")
                             }
                             if (ownerName.isNotBlank()) {
                                 sb.appendLine("──────────────────")
-                                sb.appendLine("ट्रैक्टर मालिक: $ownerName")
+                                sb.appendLine("Tractor Owner: $ownerName")
                             }
                             FormatUtils.shareText(context, sb.toString(), "Tractor Hisab Report")
                         },
@@ -287,7 +298,7 @@ fun ReportsScreen(
                         Icon(imageVector = Icons.Default.Share, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = LocaleHelper.getString("share_report", isHindi),
+                            text = "Share Report (WhatsApp / SMS)",
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -298,7 +309,7 @@ fun ReportsScreen(
 
                 // Category Wise Work Breakdown
                 Text(
-                    text = LocaleHelper.getString("category_breakdown", isHindi),
+                    text = "Work by Agricultural Category",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1B5E20)
@@ -317,7 +328,7 @@ fun ReportsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = if (isHindi) "इस अवधि में कोई काम दर्ज नहीं है" else "No work entries recorded for this period",
+                        text = "No work entries recorded for this period",
                         style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray),
                         modifier = Modifier.padding(24.dp),
                         textAlign = TextAlign.Center
@@ -342,22 +353,34 @@ fun ReportsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Image(
-                                painter = painterResource(id = ImplementImageHelper.getDrawableRes(catDrawable)),
-                                contentDescription = null,
-                                modifier = Modifier.size(42.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFEFF3EE)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = ImplementImageHelper.getDrawableRes(catDrawable)),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(42.dp)
+                                )
+                            }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(catName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 Text(
-                                    "${FormatUtils.formatDuration(mins, isHindi)} (${(percentage * 100).toInt()}%)",
+                                    text = catName,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = "${FormatUtils.formatDuration(mins)} ($mins mins)",
                                     style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                                 )
                             }
                             Text(
                                 text = FormatUtils.formatCurrency(earnings),
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = TractorGreenPrimary,
                                 fontSize = 16.sp
                             )
@@ -367,12 +390,12 @@ fun ReportsScreen(
 
                         LinearProgressIndicator(
                             progress = { percentage },
-                            color = TractorGreenPrimary,
-                            trackColor = Color(0xFFEFF3EE),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = TractorGreenPrimary,
+                            trackColor = Color(0xFFE8ECE5)
                         )
                     }
                 }

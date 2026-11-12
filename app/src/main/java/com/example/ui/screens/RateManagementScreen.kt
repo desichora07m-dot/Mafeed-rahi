@@ -68,7 +68,6 @@ fun RateManagementScreen(
     viewModel: TractorViewModel
 ) {
     val context = LocalContext.current
-    val isHindi by viewModel.isHindi.collectAsState()
     val categories by viewModel.categories.collectAsState()
 
     var categoryToEdit by remember { mutableStateOf<WorkCategory?>(null) }
@@ -90,7 +89,7 @@ fun RateManagementScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = LocaleHelper.getString("rate_management_title", isHindi),
+                        text = "Work Categories & Rates",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1B5E20)
@@ -98,7 +97,7 @@ fun RateManagementScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = LocaleHelper.getString("rate_management_sub", isHindi),
+                        text = "Manage default rates and add your own custom farm implements",
                         style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                     )
                 }
@@ -141,7 +140,7 @@ fun RateManagementScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = if (isHindi) cat.nameHi else cat.nameEn,
+                                    text = cat.nameEn,
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
@@ -154,7 +153,7 @@ fun RateManagementScreen(
                                         shape = RoundedCornerShape(6.dp)
                                     ) {
                                         Text(
-                                            text = if (isHindi) "कस्टम" else "Custom",
+                                            text = "Custom",
                                             color = Color(0xFF8D4B00),
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
@@ -164,15 +163,10 @@ fun RateManagementScreen(
                                 }
                             }
 
-                            Text(
-                                text = if (isHindi) cat.nameEn else cat.nameHi,
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
-                            )
-
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
-                                text = "${LocaleHelper.getString("default_rate", isHindi)}: ₹${cat.defaultRate.toInt()} / ${if (isHindi) cat.getParsedUnit().shortUnitHi else cat.getParsedUnit().shortUnitEn}",
+                                text = "Default Rate: ₹${cat.defaultRate.toInt()} / ${cat.getParsedUnit().labelEn}",
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = TractorGreenPrimary
@@ -200,7 +194,7 @@ fun RateManagementScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete",
+                                    contentDescription = "Delete Category",
                                     tint = Color.Red
                                 )
                             }
@@ -210,7 +204,7 @@ fun RateManagementScreen(
             }
         }
 
-        // FAB: Add Custom Category
+        // Add Custom Category FAB
         FloatingActionButton(
             onClick = { showAddCustomCategoryDialog = true },
             containerColor = TractorGreenPrimary,
@@ -218,34 +212,37 @@ fun RateManagementScreen(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .size(60.dp)
+                .padding(bottom = 90.dp, end = 20.dp)
                 .testTag("add_custom_category_fab")
         ) {
-            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Category", modifier = Modifier.size(28.dp))
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Category")
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Add Custom Work", fontWeight = FontWeight.Bold)
+            }
         }
     }
 
-    // Dialog: Edit Default Rate
-    if (categoryToEdit != null) {
-        val cat = categoryToEdit!!
-        var rateText by remember { mutableStateOf(if (cat.defaultRate % 1.0 == 0.0) cat.defaultRate.toInt().toString() else cat.defaultRate.toString()) }
-        var selectedUnit by remember { mutableStateOf(cat.getParsedUnit()) }
+    // Modal: Edit Rate Dialog
+    categoryToEdit?.let { cat ->
+        var editRateText by remember { mutableStateOf(if (cat.defaultRate % 1.0 == 0.0) cat.defaultRate.toInt().toString() else cat.defaultRate.toString()) }
+        var editUnit by remember { mutableStateOf(cat.getParsedUnit()) }
 
         AlertDialog(
             onDismissRequest = { categoryToEdit = null },
-            title = {
-                Text(
-                    text = "${LocaleHelper.getString("edit_rate", isHindi)} - ${if (isHindi) cat.nameHi else cat.nameEn}",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            },
+            title = { Text("Edit Rate: ${cat.nameEn}") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     OutlinedTextField(
-                        value = rateText,
-                        onValueChange = { rateText = it },
-                        label = { Text(LocaleHelper.getString("default_rate", isHindi)) },
+                        value = editRateText,
+                        onValueChange = { editRateText = it },
+                        label = { Text("Default Rate") },
                         prefix = { Text("₹", fontWeight = FontWeight.Bold) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -253,36 +250,28 @@ fun RateManagementScreen(
                         modifier = Modifier.fillMaxWidth().testTag("edit_rate_input")
                     )
 
-                    Text(
-                        text = LocaleHelper.getString("rate_unit", isHindi),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                    Text("Rate Type:", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
 
-                    RateUnit.entries.forEach { unit ->
-                        val isSel = selectedUnit == unit
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (isSel) TractorGreenPrimary else Color(0xFFEFF3EE),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedUnit = unit }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RateUnit.entries.forEach { unit ->
+                            val sel = editUnit == unit
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (sel) TractorGreenPrimary else Color(0xFFEFF3EE),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { editUnit = unit }
                             ) {
-                                Icon(
-                                    imageVector = if (isSel) Icons.Default.Check else Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = if (isSel) Color.White else Color.Transparent,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (isHindi) unit.labelHi else unit.labelEn,
-                                    color = if (isSel) Color.White else Color.DarkGray,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
+                                    text = unit.labelEn,
+                                    color = if (sel) Color.White else Color.DarkGray,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 8.dp)
                                 )
                             }
                         }
@@ -292,99 +281,80 @@ fun RateManagementScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val newRate = rateText.toDoubleOrNull()
-                        if (newRate != null && newRate > 0) {
-                            viewModel.saveCategoryRate(cat, newRate, selectedUnit)
-                            Toast.makeText(context, if (isHindi) "दर सुरक्षित की गई" else "Rate updated", Toast.LENGTH_SHORT).show()
-                            categoryToEdit = null
-                        }
+                        val newRate = editRateText.toDoubleOrNull() ?: cat.defaultRate
+                        viewModel.saveCategoryRate(cat, newRate, editUnit)
+                        Toast.makeText(context, "✅ Rate updated successfully!", Toast.LENGTH_SHORT).show()
+                        categoryToEdit = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
-                    modifier = Modifier.testTag("save_edited_rate_btn")
+                    modifier = Modifier.testTag("save_edit_rate_btn")
                 ) {
-                    Text(LocaleHelper.getString("save", isHindi))
+                    Text("Save")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { categoryToEdit = null }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
+                    Text("Cancel")
                 }
             }
         )
     }
 
-    // Dialog: Add Custom Work Category
+    // Modal: Add Custom Category Dialog
     if (showAddCustomCategoryDialog) {
-        var nameEn by remember { mutableStateOf("") }
-        var nameHi by remember { mutableStateOf("") }
-        var rateText by remember { mutableStateOf("15") }
-        var selectedUnit by remember { mutableStateOf(RateUnit.PER_MINUTE) }
-        var selectedDrawable by remember { mutableStateOf("ic_work_custom") }
+        var newCatName by remember { mutableStateOf("") }
+        var newCatRate by remember { mutableStateOf("15") }
+        var newCatUnit by remember { mutableStateOf(RateUnit.PER_MINUTE) }
 
         AlertDialog(
             onDismissRequest = { showAddCustomCategoryDialog = false },
-            title = {
-                Text(
-                    text = LocaleHelper.getString("add_custom_category", isHindi),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            },
+            title = { Text("Add Custom Work Category") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     OutlinedTextField(
-                        value = nameEn,
-                        onValueChange = { nameEn = it },
-                        label = { Text("Category Name (English)") },
+                        value = newCatName,
+                        onValueChange = { newCatName = it },
+                        label = { Text("Work Name") },
+                        placeholder = { Text("e.g. Deep Ploughing, Bund Maker") },
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("custom_cat_name_en")
+                        modifier = Modifier.fillMaxWidth().testTag("new_cat_name_en")
                     )
 
                     OutlinedTextField(
-                        value = nameHi,
-                        onValueChange = { nameHi = it },
-                        label = { Text("काम का नाम (हिन्दी)") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("custom_cat_name_hi")
-                    )
-
-                    OutlinedTextField(
-                        value = rateText,
-                        onValueChange = { rateText = it },
-                        label = { Text(LocaleHelper.getString("default_rate", isHindi)) },
-                        prefix = { Text("₹", fontWeight = FontWeight.Bold) },
+                        value = newCatRate,
+                        onValueChange = { newCatRate = it },
+                        label = { Text("Default Rate (₹)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Text(
-                        text = LocaleHelper.getString("rate_unit", isHindi),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
-                    )
-
+                    // Unit Selection
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         RateUnit.entries.forEach { unit ->
-                            val isSel = selectedUnit == unit
+                            val sel = newCatUnit == unit
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isSel) TractorGreenPrimary else Color(0xFFEFF3EE),
+                                color = if (sel) TractorGreenPrimary else Color(0xFFEFF3EE),
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clickable { selectedUnit = unit }
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { newCatUnit = unit }
                             ) {
                                 Text(
-                                    text = if (isHindi) unit.shortUnitHi else unit.shortUnitEn,
-                                    color = if (isSel) Color.White else Color.DarkGray,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(vertical = 8.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    text = unit.labelEn,
+                                    color = if (sel) Color.White else Color.DarkGray,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 8.dp)
                                 )
                             }
                         }
@@ -394,52 +364,53 @@ fun RateManagementScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val rate = rateText.toDoubleOrNull() ?: 15.0
-                        if (nameEn.isNotBlank() || nameHi.isNotBlank()) {
-                            viewModel.addCustomCategory(nameEn, nameHi, rate, selectedUnit, selectedDrawable)
+                        if (newCatName.trim().isNotBlank()) {
+                            val rateVal = newCatRate.toDoubleOrNull() ?: 15.0
+                            viewModel.addCustomCategory(
+                                name = newCatName.trim(),
+                                rate = rateVal,
+                                unit = newCatUnit
+                            )
+                            Toast.makeText(context, "✅ Category added successfully!", Toast.LENGTH_SHORT).show()
                             showAddCustomCategoryDialog = false
+                        } else {
+                            Toast.makeText(context, "Please enter work name", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary),
-                    modifier = Modifier.testTag("save_custom_category_btn")
+                    colors = ButtonDefaults.buttonColors(containerColor = TractorGreenPrimary)
                 ) {
-                    Text(LocaleHelper.getString("save", isHindi))
+                    Text("Add Category")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddCustomCategoryDialog = false }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
+                    Text("Cancel")
                 }
             }
         )
     }
 
-    // Dialog: Delete Category Confirmation
-    if (categoryToDelete != null) {
-        val cat = categoryToDelete!!
+    // Modal: Delete Custom Category
+    categoryToDelete?.let { cat ->
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
-            title = { Text(if (isHindi) "यंत्र हटाएं?" else "Delete Category?") },
-            text = {
-                Text(
-                    text = if (isHindi) "क्या आप '${cat.nameHi}' को हटाना चाहते हैं?"
-                    else "Are you sure you want to delete '${cat.nameEn}'?"
-                )
-            },
+            title = { Text("Delete Category?") },
+            text = { Text("Are you sure you want to delete '${cat.nameEn}'?") },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.deleteCategory(cat)
                         categoryToDelete = null
+                        Toast.makeText(context, "Category removed", Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) {
-                    Text(LocaleHelper.getString("delete", isHindi), color = Color.White)
+                    Text("Delete", color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { categoryToDelete = null }) {
-                    Text(LocaleHelper.getString("cancel", isHindi))
+                    Text("Cancel")
                 }
             }
         )

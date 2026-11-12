@@ -25,7 +25,7 @@ object FormatUtils {
         return "₹${currencyFormat.format(amount)}"
     }
 
-    fun formatDuration(totalMinutes: Int, isHindi: Boolean): String {
+    fun formatDuration(totalMinutes: Int, isHindi: Boolean = false): String {
         val hours = totalMinutes / 60
         val mins = totalMinutes % 60
         return when {
@@ -41,13 +41,13 @@ object FormatUtils {
         }
     }
 
-    fun formatDate(millis: Long, isHindi: Boolean): String {
-        val sdf = SimpleDateFormat("dd MMM yyyy", if (isHindi) Locale("hi", "IN") else Locale.ENGLISH)
+    fun formatDate(millis: Long, isHindi: Boolean = false): String {
+        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
         return sdf.format(Date(millis))
     }
 
-    fun formatDateWithDay(millis: Long, isHindi: Boolean): String {
-        val sdf = SimpleDateFormat("EEE, dd MMM yyyy", if (isHindi) Locale("hi", "IN") else Locale.ENGLISH)
+    fun formatDateWithDay(millis: Long, isHindi: Boolean = false): String {
+        val sdf = SimpleDateFormat("EEE, dd MMM yyyy", Locale.ENGLISH)
         return sdf.format(Date(millis))
     }
 
@@ -70,33 +70,15 @@ object FormatUtils {
         entry: WorkEntry,
         ownerName: String,
         tractorModel: String,
-        isHindi: Boolean
+        isHindi: Boolean = false
     ): String {
-        val durationStr = formatDuration(entry.durationMinutes, isHindi)
-        val dateStr = formatDate(entry.workDateMillis, isHindi)
+        val durationStr = formatDuration(entry.durationMinutes)
+        val dateStr = formatDate(entry.workDateMillis)
         val totalStr = formatCurrency(entry.totalAmount)
         val paidStr = formatCurrency(entry.amountPaid)
         val pendingStr = formatCurrency(entry.amountPending)
 
-        return if (isHindi) {
-            """
-            🌾 *ट्रैक्टर काम की रसीद - Tractor Hisab* 🌾
-            ━━━━━━━━━━━━━━━━━━
-            👤 *ग्राहक:* ${entry.customerName}
-            📅 *दिनांक:* $dateStr
-            🚜 *काम का प्रकार:* ${entry.categoryName}
-            ⏱️ *काम का समय:* $durationStr (${entry.durationMinutes} मिनट)
-            💰 *दर:* ₹${entry.rate} / ${entry.getParsedUnit().labelHi}
-            ──────────────────
-            💵 *कुल बिल:* $totalStr
-            ✅ *जमा राशि:* $paidStr
-            ⚠️ *बाकी बकाया:* $pendingStr
-            ━━━━━━━━━━━━━━━━━━
-            ${if (entry.notes.isNotBlank()) "📝 *नोट:* ${entry.notes}\n" else ""}${if (ownerName.isNotBlank()) "🚜 *मालिक:* $ownerName" else ""}${if (tractorModel.isNotBlank()) " ($tractorModel)" else ""}
-            _Tractor Hisab ऐप द्वारा सुरक्षित हिसाब_
-            """.trimIndent()
-        } else {
-            """
+        return """
             🌾 *Tractor Work Receipt - Tractor Hisab* 🌾
             ━━━━━━━━━━━━━━━━━━
             👤 *Customer:* ${entry.customerName}
@@ -106,13 +88,12 @@ object FormatUtils {
             💰 *Rate:* ₹${entry.rate} / ${entry.getParsedUnit().labelEn}
             ──────────────────
             💵 *Total Bill:* $totalStr
-            ✅ *Paid:* $paidStr
+            ✅ *Amount Paid:* $paidStr
             ⚠️ *Pending Balance:* $pendingStr
             ━━━━━━━━━━━━━━━━━━
             ${if (entry.notes.isNotBlank()) "📝 *Notes:* ${entry.notes}\n" else ""}${if (ownerName.isNotBlank()) "🚜 *Owner:* $ownerName" else ""}${if (tractorModel.isNotBlank()) " ($tractorModel)" else ""}
-            _Generated via Tractor Hisab App_
-            """.trimIndent()
-        }
+            _Tractor Hisab - Offline Tractor Accounting_
+        """.trimIndent()
     }
 
     fun buildCustomerStatementText(
@@ -120,49 +101,56 @@ object FormatUtils {
         entries: List<WorkEntry>,
         payments: List<PaymentTransaction>,
         ownerName: String,
-        isHindi: Boolean
+        isHindi: Boolean = false
     ): String {
         val sb = StringBuilder()
-        if (isHindi) {
-            sb.appendLine("📋 *ग्राहक खाता विवरणी (Customer Statement)*")
-            sb.appendLine("━━━━━━━━━━━━━━━━━━")
-            sb.appendLine("👤 *नाम:* ${summary.customer.name}")
-            if (summary.customer.phone.isNotBlank()) sb.appendLine("📞 *मोबाइल:* ${summary.customer.phone}")
-            if (summary.customer.village.isNotBlank()) sb.appendLine("🏡 *गांव:* ${summary.customer.village}")
-            sb.appendLine("⏱️ *कुल काम समय:* ${formatDuration(summary.totalWorkMinutes, true)}")
-            sb.appendLine("💵 *कुल काम बिल:* ${formatCurrency(summary.totalBillAmount)}")
-            sb.appendLine("✅ *कुल जमा:* ${formatCurrency(summary.totalPaidAmount)}")
-            sb.appendLine("⚠️ *कुल बाकी बकाया:* ${formatCurrency(summary.remainingBalance)}")
-            sb.appendLine("━━━━━━━━━━━━━━━━━━")
-            sb.appendLine("📜 *हालिया काम:*")
-            entries.take(5).forEach {
-                sb.appendLine("• ${it.categoryName} | ${formatDuration(it.durationMinutes, true)} | ${formatCurrency(it.totalAmount)}")
-            }
-            if (ownerName.isNotBlank()) {
-                sb.appendLine("──────────────────")
-                sb.appendLine("🚜 *संपर्क:* $ownerName")
-            }
-        } else {
-            sb.appendLine("📋 *Customer Account Statement*")
-            sb.appendLine("━━━━━━━━━━━━━━━━━━")
-            sb.appendLine("👤 *Customer:* ${summary.customer.name}")
-            if (summary.customer.phone.isNotBlank()) sb.appendLine("📞 *Phone:* ${summary.customer.phone}")
-            if (summary.customer.village.isNotBlank()) sb.appendLine("🏡 *Village:* ${summary.customer.village}")
-            sb.appendLine("⏱️ *Total Duration:* ${formatDuration(summary.totalWorkMinutes, false)}")
-            sb.appendLine("💵 *Total Bill:* ${formatCurrency(summary.totalBillAmount)}")
-            sb.appendLine("✅ *Total Paid:* ${formatCurrency(summary.totalPaidAmount)}")
-            sb.appendLine("⚠️ *Net Balance Due:* ${formatCurrency(summary.remainingBalance)}")
-            sb.appendLine("━━━━━━━━━━━━━━━━━━")
-            sb.appendLine("📜 *Recent Works:*")
-            entries.take(5).forEach {
-                sb.appendLine("• ${it.categoryName} | ${formatDuration(it.durationMinutes, false)} | ${formatCurrency(it.totalAmount)}")
-            }
-            if (ownerName.isNotBlank()) {
-                sb.appendLine("──────────────────")
-                sb.appendLine("🚜 *Contact:* $ownerName")
-            }
+        sb.appendLine("📋 *Customer Account Statement - Tractor Hisab*")
+        sb.appendLine("━━━━━━━━━━━━━━━━━━")
+        sb.appendLine("👤 *Customer:* ${summary.customer.name}")
+        if (summary.customer.phone.isNotBlank()) sb.appendLine("📞 *Phone:* ${summary.customer.phone}")
+        if (summary.customer.village.isNotBlank()) sb.appendLine("🏡 *Village:* ${summary.customer.village}")
+        sb.appendLine("⏱️ *Total Duration:* ${formatDuration(summary.totalWorkMinutes)}")
+        sb.appendLine("💵 *Total Billed:* ${formatCurrency(summary.totalBillAmount)}")
+        sb.appendLine("✅ *Total Paid:* ${formatCurrency(summary.totalPaidAmount)}")
+        sb.appendLine("⚠️ *Net Balance Due:* ${formatCurrency(summary.remainingBalance)}")
+        sb.appendLine("━━━━━━━━━━━━━━━━━━")
+        sb.appendLine("📜 *Recent Work Entries:*")
+        entries.take(5).forEach {
+            sb.appendLine("• ${it.categoryName} | ${formatDuration(it.durationMinutes)} | ${formatCurrency(it.totalAmount)}")
+        }
+        if (ownerName.isNotBlank()) {
+            sb.appendLine("──────────────────")
+            sb.appendLine("🚜 *Contact:* $ownerName")
         }
         return sb.toString().trim()
+    }
+
+    fun generateWorkRecordsCsv(entries: List<WorkEntry>): String {
+        val sb = StringBuilder()
+        sb.appendLine("Date,Customer,Work Category,Duration Minutes,Duration,Rate,Rate Unit,Total Bill,Amount Paid,Amount Pending,Status,Notes")
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+        for (e in entries) {
+            val dateStr = sdf.format(Date(e.workDateMillis))
+            val safeCustomer = "\"${e.customerName.replace("\"", "\"\"")}\""
+            val safeCategory = "\"${e.categoryName.replace("\"", "\"\"")}\""
+            val durationText = "\"${formatDuration(e.durationMinutes)}\""
+            val safeNotes = "\"${e.notes.replace("\"", "\"\"")}\""
+            val status = e.paymentStatus.uppercase()
+            sb.appendLine("$dateStr,$safeCustomer,$safeCategory,${e.durationMinutes},$durationText,${e.rate},${e.rateUnit},${e.totalAmount},${e.amountPaid},${e.amountPending},$status,$safeNotes")
+        }
+        return sb.toString()
+    }
+
+    fun generateCustomerLedgerCsv(ledgers: List<CustomerLedgerSummary>): String {
+        val sb = StringBuilder()
+        sb.appendLine("Customer Name,Phone,Village,Total Work Minutes,Total Billed,Total Paid,Remaining Balance,Work Entries Count")
+        for (l in ledgers) {
+            val safeCustomer = "\"${l.customer.name.replace("\"", "\"\"")}\""
+            val safePhone = "\"${l.customer.phone.replace("\"", "\"\"")}\""
+            val safeVillage = "\"${l.customer.village.replace("\"", "\"\"")}\""
+            sb.appendLine("$safeCustomer,$safePhone,$safeVillage,${l.totalWorkMinutes},${l.totalBillAmount},${l.totalPaidAmount},${l.remainingBalance},${l.totalWorkEntries}")
+        }
+        return sb.toString()
     }
 
     fun shareText(context: Context, text: String, title: String = "Share Bill") {
@@ -172,6 +160,25 @@ object FormatUtils {
             putExtra(Intent.EXTRA_TEXT, text)
         }
         context.startActivity(Intent.createChooser(intent, title))
+    }
+
+    fun shareCsvFile(context: Context, csvContent: String, fileName: String, title: String = "Export CSV") {
+        try {
+            val file = File(context.cacheDir, fileName)
+            file.writeText(csvContent)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, title)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, title))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback to plain text share if file sharing fails
+            shareText(context, csvContent, title)
+        }
     }
 
     fun generateAndSharePdfInvoice(
@@ -228,7 +235,7 @@ object FormatUtils {
         canvas.drawRect(40f, y, 555f, y + 60f, paint)
 
         canvas.drawText("Owner: ${if (ownerName.isBlank()) "Tractor Owner" else ownerName}", 55f, y + 25f, boldPaint)
-        canvas.drawText("Tractor: ${if (tractorModel.isBlank()) "Standard Agricultural Tractor" else tractorModel}", 55f, y + 45f, textPaint)
+        canvas.drawText("Tractor: ${if (tractorModel.isBlank()) "Agricultural Tractor" else tractorModel}", 55f, y + 45f, textPaint)
         if (ownerPhone.isNotBlank()) {
             canvas.drawText("Contact: $ownerPhone", 360f, y + 25f, textPaint)
         }
@@ -258,7 +265,7 @@ object FormatUtils {
         paint.color = Color.WHITE
         canvas.drawRect(40f, y, 555f, y + 40f, paint)
         canvas.drawText(entry.categoryName, 50f, y + 25f, textPaint)
-        canvas.drawText("${entry.durationMinutes} mins (${formatDuration(entry.durationMinutes, false)})", 260f, y + 25f, textPaint)
+        canvas.drawText("${entry.durationMinutes} mins (${formatDuration(entry.durationMinutes)})", 260f, y + 25f, textPaint)
         canvas.drawText("₹${entry.rate} / ${entry.getParsedUnit().shortUnitEn}", 370f, y + 25f, textPaint)
         canvas.drawText(formatCurrency(entry.totalAmount), 480f, y + 25f, boldPaint)
 
@@ -285,7 +292,7 @@ object FormatUtils {
             isFakeBoldText = true
             isAntiAlias = true
         }
-        canvas.drawText("Balance Pending:", 315f, y + 85f, balPaint)
+        canvas.drawText("Balance Due:", 315f, y + 85f, balPaint)
         canvas.drawText(formatCurrency(entry.amountPending), 460f, y + 85f, balPaint)
 
         y += 140f
@@ -310,7 +317,6 @@ object FormatUtils {
             pdfDocument.close()
             outputStream.close()
 
-            // Open share intent
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"

@@ -8,36 +8,54 @@ import com.example.data.dao.WorkCategoryDao
 import com.example.data.dao.WorkEntryDao
 import com.example.data.model.Customer
 import com.example.data.model.CustomerLedgerSummary
-import com.example.data.model.DashboardSummary
 import com.example.data.model.PaymentStatus
 import com.example.data.model.PaymentTransaction
 import com.example.data.model.RateUnit
 import com.example.data.model.WorkCategory
 import com.example.data.model.WorkEntry
 import com.example.data.populateInitialData
+import com.example.util.FormatUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.Calendar
 
 class TractorRepository(
+    private val context: Context,
     private val database: AppDatabase,
     private val customerDao: CustomerDao = database.customerDao(),
     private val categoryDao: WorkCategoryDao = database.workCategoryDao(),
     private val workEntryDao: WorkEntryDao = database.workEntryDao(),
     private val paymentDao: PaymentTransactionDao = database.paymentTransactionDao()
 ) {
+    private val prefs = context.getSharedPreferences("tractor_hisab_prefs", Context.MODE_PRIVATE)
+
     init {
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 if (categoryDao.getCount() == 0) {
                     categoryDao.insertAll(AppDatabase.DEFAULT_CATEGORIES)
+                } else {
+                    // Ensure the 5 approved default categories exist and have updated photography
+                    val existing = categoryDao.getAllCategoriesList()
+                    for (defCat in AppDatabase.DEFAULT_CATEGORIES) {
+                        val match = existing.find { it.key == defCat.key }
+                        if (match == null) {
+                            categoryDao.insert(defCat)
+                        } else if (match.drawableName != defCat.drawableName || match.nameEn != defCat.nameEn) {
+                            categoryDao.update(match.copy(
+                                nameEn = defCat.nameEn,
+                                nameHi = defCat.nameHi,
+                                drawableName = defCat.drawableName
+                            ))
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("TractorRepository", "Error ensuring default categories", e)
@@ -49,6 +67,13 @@ class TractorRepository(
     val allCategories: Flow<List<WorkCategory>> = categoryDao.getAllCategories()
     val allWorkEntries: Flow<List<WorkEntry>> = workEntryDao.getAllWorkEntries()
     val allPayments: Flow<List<PaymentTransaction>> = paymentDao.getAllPayments()
+
+    // 5 Default Categories + Custom Categories for Work Selection Screen
+    // (Excludes removed categories: land_leveler, paddy_thresher, maize_thresher from selection cards)
+    val visibleCategories: Flow<List<WorkCategory>> = categoryDao.getAllCategories().map { list ->
+        val approvedDefaultKeys = listOf("cultivator", "kartal", "rotavator", "trolley", "mitti_cutting")
+        list.filter { it.key in approvedDefaultKeys || it.isCustom }
+    }
 
     // Combined Customer Ledgers with live balances
     val customerLedgers: Flow<List<CustomerLedgerSummary>> = combine(
@@ -77,6 +102,14 @@ class TractorRepository(
         }
     }
 
+    fun getLastBackupTime(): Long {
+        return prefs.getLong("last_backup_timestamp", 0L)
+    }
+
+    fun setLastBackupTime(timestamp: Long) {
+        prefs.edit().putLong("last_backup_timestamp", timestamp).apply()
+    }
+
     suspend fun findOrCreateCustomer(name: String, phone: String = "", village: String = ""): Customer = withContext(Dispatchers.IO) {
         val trimmed = name.trim()
         val existing = customerDao.findCustomerByName(trimmed)
@@ -87,6 +120,20 @@ class TractorRepository(
             val id = customerDao.insert(newCustomer)
             newCustomer.copy(id = id)
         }
+    }
+
+    suspend fun insertCustomer(customer: Customer): Long = withContext(Dispatchers.IO) {
+        customerDao.insert(customer)
+    }
+
+    suspend fun updateCustomer(customer: Customer) = withContext(Dispatchers.IO) {
+        customerDao.update(customer)
+    }
+
+    suspend fun deleteCustomer(customer: Customer) = withContext(Dispatchers.IO) {
+        workEntryDao.deleteByCustomerId(customer.id)
+        paymentDao.deleteByCustomerId(customer.id)
+        customerDao.delete(customer)
     }
 
     suspend fun saveWorkEntry(
@@ -161,20 +208,6 @@ class TractorRepository(
         paymentDao.delete(payment)
     }
 
-    suspend fun insertCustomer(customer: Customer): Long = withContext(Dispatchers.IO) {
-        customerDao.insert(customer)
-    }
-
-    suspend fun updateCustomer(customer: Customer) = withContext(Dispatchers.IO) {
-        customerDao.update(customer)
-    }
-
-    suspend fun deleteCustomer(customer: Customer) = withContext(Dispatchers.IO) {
-        workEntryDao.deleteByCustomerId(customer.id)
-        paymentDao.deleteByCustomerId(customer.id)
-        customerDao.delete(customer)
-    }
-
     suspend fun saveCategory(category: WorkCategory): Long = withContext(Dispatchers.IO) {
         if (category.id == 0L) {
             categoryDao.insert(category)
@@ -198,6 +231,16 @@ class TractorRepository(
         customerDao.deleteAll()
         categoryDao.deleteAll()
         populateInitialData(database)
+    }
+
+    suspend fun exportWorkEntriesCsv(): String = withContext(Dispatchers.IO) {
+        val entries = workEntryDao.getAllWorkEntries().first()
+        FormatUtils.generateWorkRecordsCsv(entries)
+    }
+
+    suspend fun exportCustomerLedgersCsv(): String = withContext(Dispatchers.IO) {
+        val ledgers = customerLedgers.first()
+        FormatUtils.generateCustomerLedgerCsv(ledgers)
     }
 
     suspend fun exportDataAsJson(): String = withContext(Dispatchers.IO) {
@@ -276,7 +319,9 @@ class TractorRepository(
         }
         root.put("payments", payArr)
 
-        root.toString(2)
+        val jsonStr = root.toString(2)
+        setLastBackupTime(System.currentTimeMillis())
+        jsonStr
     }
 
     suspend fun importDataFromJson(jsonString: String): Boolean = withContext(Dispatchers.IO) {
@@ -298,6 +343,28 @@ class TractorRepository(
                 }
             }
 
+            if (root.has("categories")) {
+                val catArr = root.getJSONArray("categories")
+                for (i in 0 until catArr.length()) {
+                    val obj = catArr.getJSONObject(i)
+                    val key = obj.getString("key")
+                    val existing = categoryDao.getCategoryByKey(key)
+                    if (existing == null) {
+                        categoryDao.insert(
+                            WorkCategory(
+                                key = key,
+                                nameEn = obj.getString("nameEn"),
+                                nameHi = obj.optString("nameHi", obj.getString("nameEn")),
+                                drawableName = obj.optString("drawableName", "ic_work_custom"),
+                                defaultRate = obj.optDouble("defaultRate", 15.0),
+                                defaultUnit = obj.optString("defaultUnit", RateUnit.PER_MINUTE.id),
+                                isCustom = obj.optBoolean("isCustom", false)
+                            )
+                        )
+                    }
+                }
+            }
+
             if (root.has("workEntries")) {
                 val entriesArr = root.getJSONArray("workEntries")
                 for (i in 0 until entriesArr.length()) {
@@ -309,7 +376,7 @@ class TractorRepository(
                             categoryId = obj.optLong("categoryId", 1),
                             categoryKey = obj.optString("categoryKey", "rotavator"),
                             categoryName = obj.getString("categoryName"),
-                            categoryDrawable = obj.optString("categoryDrawable", "ic_work_rotavator"),
+                            categoryDrawable = obj.optString("categoryDrawable", "img_rotavator"),
                             durationMinutes = obj.getInt("durationMinutes"),
                             rate = obj.getDouble("rate"),
                             rateUnit = obj.optString("rateUnit", RateUnit.PER_MINUTE.id),
@@ -355,7 +422,7 @@ class TractorRepository(
         fun getRepository(context: Context): TractorRepository {
             return REPO_INSTANCE ?: synchronized(this) {
                 val db = AppDatabase.getDatabase(context)
-                val repo = TractorRepository(db)
+                val repo = TractorRepository(context.applicationContext, db)
                 REPO_INSTANCE = repo
                 repo
             }

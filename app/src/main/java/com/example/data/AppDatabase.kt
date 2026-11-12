@@ -57,65 +57,41 @@ abstract class AppDatabase : RoomDatabase() {
             WorkCategory(
                 key = "cultivator",
                 nameEn = "Cultivator",
-                nameHi = "कल्टीवेटर",
-                drawableName = "ic_work_cultivator",
-                defaultRate = 12.0,
+                nameHi = "Cultivator",
+                drawableName = "img_cultivator",
+                defaultRate = 15.0,
                 defaultUnit = RateUnit.PER_MINUTE.id
             ),
             WorkCategory(
                 key = "kartal",
                 nameEn = "Kartal",
-                nameHi = "करताल / डिस्क",
-                drawableName = "ic_work_kartal",
+                nameHi = "Kartal",
+                drawableName = "img_kartal",
                 defaultRate = 15.0,
                 defaultUnit = RateUnit.PER_MINUTE.id
             ),
             WorkCategory(
                 key = "rotavator",
                 nameEn = "Rotavator",
-                nameHi = "रोटावेटर",
-                drawableName = "ic_work_rotavator",
-                defaultRate = 18.0,
-                defaultUnit = RateUnit.PER_MINUTE.id
-            ),
-            WorkCategory(
-                key = "land_leveler",
-                nameEn = "Land Leveler",
-                nameHi = "लैंड लेवलर / पाटा",
-                drawableName = "ic_work_land_leveler",
-                defaultRate = 850.0,
-                defaultUnit = RateUnit.PER_HOUR.id
-            ),
-            WorkCategory(
-                key = "paddy_thresher",
-                nameEn = "Paddy Thresher",
-                nameHi = "धान थ्रेशर",
-                drawableName = "ic_work_paddy_thresher",
-                defaultRate = 20.0,
-                defaultUnit = RateUnit.PER_MINUTE.id
-            ),
-            WorkCategory(
-                key = "maize_thresher",
-                nameEn = "Maize Thresher",
-                nameHi = "मक्का थ्रेशर",
-                drawableName = "ic_work_maize_thresher",
-                defaultRate = 22.0,
+                nameHi = "Rotavator",
+                drawableName = "img_rotavator",
+                defaultRate = 15.0,
                 defaultUnit = RateUnit.PER_MINUTE.id
             ),
             WorkCategory(
                 key = "trolley",
                 nameEn = "Tractor Trolley",
-                nameHi = "ट्रैक्टर ट्रॉली",
-                drawableName = "ic_work_trolley",
+                nameHi = "Tractor Trolley",
+                drawableName = "img_trolley",
                 defaultRate = 600.0,
                 defaultUnit = RateUnit.FIXED.id
             ),
             WorkCategory(
-                key = "mitti_karna",
-                nameEn = "Mitti Karna",
-                nameHi = "मिट्टी काटना",
-                drawableName = "ic_work_mitti_karna",
-                defaultRate = 950.0,
+                key = "mitti_cutting",
+                nameEn = "Mitti Cutting",
+                nameHi = "Mitti Cutting",
+                drawableName = "img_mitti_cutting",
+                defaultRate = 900.0,
                 defaultUnit = RateUnit.PER_HOUR.id
             )
         )
@@ -147,10 +123,10 @@ suspend fun populateInitialData(database: AppDatabase) {
             categoryDao.insertAll(AppDatabase.DEFAULT_CATEGORIES)
         }
 
-    // Seed helpful initial customers for immediate usability & demo
-    val c1Id = customerDao.insert(Customer(name = "Babulal Patel (बाबूलाल)", phone = "9876543210", village = "Kheda"))
-    val c2Id = customerDao.insert(Customer(name = "Rameshwar Sharma (रामेश्वर)", phone = "9823456789", village = "Rampur"))
-    val c3Id = customerDao.insert(Customer(name = "Suresh Yadav (सुरेश)", phone = "9898765432", village = "Shivgarh"))
+    // Seed initial customers for immediate usability
+    val c1Id = customerDao.insert(Customer(name = "Babulal Patel", phone = "9876543210", village = "Kheda"))
+    val c2Id = customerDao.insert(Customer(name = "Rameshwar Sharma", phone = "9823456789", village = "Rampur"))
+    val c3Id = customerDao.insert(Customer(name = "Suresh Yadav", phone = "9898765432", village = "Shivgarh"))
 
     val now = System.currentTimeMillis()
     val oneHourAgo = now - 3600000L
@@ -160,11 +136,11 @@ suspend fun populateInitialData(database: AppDatabase) {
     val entry1Id = workEntryDao.insert(
         WorkEntry(
             customerId = c1Id,
-            customerName = "Babulal Patel (बाबूलाल)",
+            customerName = "Babulal Patel",
             categoryId = 3,
             categoryKey = "rotavator",
-            categoryName = "Rotavator (रोटावेटर)",
-            categoryDrawable = "ic_work_rotavator",
+            categoryName = "Rotavator",
+            categoryDrawable = "img_rotavator",
             durationMinutes = 20,
             rate = 15.0,
             rateUnit = RateUnit.PER_MINUTE.id,
@@ -173,13 +149,13 @@ suspend fun populateInitialData(database: AppDatabase) {
             amountPending = 0.0,
             paymentStatus = PaymentStatus.PAID.id,
             workDateMillis = now,
-            notes = "Khet no. 4 rotavator work done"
+            notes = "East field rotavator work"
         )
     )
     paymentDao.insert(
         PaymentTransaction(
             customerId = c1Id,
-            customerName = "Babulal Patel (बाबूलाल)",
+            customerName = "Babulal Patel",
             workEntryId = entry1Id,
             amount = 300.0,
             paymentMethod = "CASH",
@@ -188,21 +164,21 @@ suspend fun populateInitialData(database: AppDatabase) {
         )
     )
 
-    // Entry 2: Cultivator 1 hour 30 min @ ₹12/min = 90 * 12 = ₹1080 (Partial paid ₹500, pending ₹580)
+    // Entry 2: Cultivator 1 hour 30 min @ ₹15/min = 90 * 15 = ₹1350 (Partial paid ₹500, pending ₹850)
     val entry2Id = workEntryDao.insert(
         WorkEntry(
             customerId = c2Id,
-            customerName = "Rameshwar Sharma (रामेश्वर)",
+            customerName = "Rameshwar Sharma",
             categoryId = 1,
             categoryKey = "cultivator",
-            categoryName = "Cultivator (कल्टीवेटर)",
-            categoryDrawable = "ic_work_cultivator",
+            categoryName = "Cultivator",
+            categoryDrawable = "img_cultivator",
             durationMinutes = 90,
-            rate = 12.0,
+            rate = 15.0,
             rateUnit = RateUnit.PER_MINUTE.id,
-            totalAmount = 1080.0,
+            totalAmount = 1350.0,
             amountPaid = 500.0,
-            amountPending = 580.0,
+            amountPending = 850.0,
             paymentStatus = PaymentStatus.PARTIAL.id,
             workDateMillis = oneHourAgo,
             notes = "East boundary field tilled"
@@ -211,12 +187,12 @@ suspend fun populateInitialData(database: AppDatabase) {
     paymentDao.insert(
         PaymentTransaction(
             customerId = c2Id,
-            customerName = "Rameshwar Sharma (रामेश्वर)",
+            customerName = "Rameshwar Sharma",
             workEntryId = entry2Id,
             amount = 500.0,
             paymentMethod = "UPI",
             paymentDateMillis = oneHourAgo,
-            notes = "UPI payment via PhonePe"
+            notes = "UPI payment"
         )
     )
 
@@ -224,11 +200,11 @@ suspend fun populateInitialData(database: AppDatabase) {
     workEntryDao.insert(
         WorkEntry(
             customerId = c3Id,
-            customerName = "Suresh Yadav (सुरेश)",
-            categoryId = 7,
+            customerName = "Suresh Yadav",
+            categoryId = 4,
             categoryKey = "trolley",
-            categoryName = "Tractor Trolley (ट्रॉली)",
-            categoryDrawable = "ic_work_trolley",
+            categoryName = "Tractor Trolley",
+            categoryDrawable = "img_trolley",
             durationMinutes = 60,
             rate = 1200.0,
             rateUnit = RateUnit.FIXED.id,
