@@ -1,0 +1,71 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Green Badge Background -->
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M16,6 C10.48,6 6,10.48 6,16 L6,80 C6,85.52 10.48,90 16,90 L80,90 C85.52,90 90,85.52 90,80 L90,16 C90,10.48 85.52,6 80,6 Z" />
+
+    <!-- Tractor Cabin Roof -->
+    <path
+        android:fillColor="#FFA000"
+        android:pathData="M30,26 L48,26 L50,29 L28,29 Z" />
+
+    <!-- Cabin Glass / Pillars -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M31,30 L47,30 L45,42 L33,42 Z" />
+    <path
+        android:fillColor="#263238"
+        android:pathData="M35,34 L39,42 L37,42 L34,34 Z" />
+
+    <!-- Engine Hood -->
+    <path
+        android:fillColor="#FF8F00"
+        android:pathData="M46,39 L66,39 Q71,39 71,47 L71,53 L46,53 Z" />
+
+    <!-- Headlight -->
+    <path
+        android:fillColor="#FFF9C4"
+        android:pathData="M70,44 A2.5,2.5 0 1,0 75,44 A2.5,2.5 0 1,0 70,44 Z" />
+
+    <!-- Exhaust Pipe -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M57,24 L60,24 L60,39 L57,39 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,19 Q62,17 65,20 Q61,23 58,19 Z" />
+
+    <!-- Rear Fender -->
+    <path
+        android:fillColor="#F57C00"
+        android:pathData="M23,43 C23,35 41,35 43,43 L43,47 L23,47 Z" />
+
+    <!-- Large Rear Wheel -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M33,42 A14,14 0 1,0 61,42 A14,14 0 1,0 33,42 Z" />
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M33,42 A11,11 0 1,0 55,42 A11,11 0 1,0 33,42 Z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M38,42 A7,7 0 1,0 52,42 A7,7 0 1,0 38,42 Z" />
+
+    <!-- Small Front Wheel -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M60,53 A8,8 0 1,0 76,53 A8,8 0 1,0 60,53 Z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M64,53 A3.5,3.5 0 1,0 71,53 A3.5,3.5 0 1,0 64,53 Z" />
+
+    <!-- Field Ground Line -->
+    <path
+        android:fillColor="#81C784"
+        android:pathData="M16,70 L80,70 L80,73 L16,73 Z" />
+</vector>

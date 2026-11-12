@@ -1,8 +1,92 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/tractor_app_icon_1794486153847"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Tractor Cabin / Body Frame (Inside 66dp safe zone: 21 to 87) -->
+    <!-- Cabin Roof -->
+    <path
+        android:fillColor="#FFA000"
+        android:pathData="M34,30 L54,30 L56,33 L32,33 Z" />
+
+    <!-- Cabin Glass / Pillars -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M35,34 L53,34 L51,47 L37,47 Z" />
+    <path
+        android:fillColor="#263238"
+        android:pathData="M39,38 L43,47 L41,47 L38,38 Z" />
+
+    <!-- Engine Hood (Front Tractor Body) -->
+    <path
+        android:fillColor="#FF8F00"
+        android:pathData="M52,44 L74,44 Q79,44 79,52 L79,58 L52,58 Z" />
+
+    <!-- Hood Front Grill / Chrome Strip -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M76,46 L79,46 L79,56 L76,56 Z" />
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M54,49 L75,49 L75,51 L54,51 Z" />
+
+    <!-- Headlight -->
+    <path
+        android:fillColor="#FFF9C4"
+        android:pathData="M78,48 A3,3 0 1,0 84,48 A3,3 0 1,0 78,48 Z" />
+
+    <!-- Vertical Exhaust Stack Pipe -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M64,28 L67,28 L67,44 L64,44 Z" />
+    <!-- Exhaust Cap / Puff -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M62,26 L68,26 L67,28 L63,28 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M65,21 Q69,19 72,22 Q68,25 65,21 Z" />
+
+    <!-- Rear Fender (Curved over large rear tire) -->
+    <path
+        android:fillColor="#F57C00"
+        android:pathData="M26,48 C26,40 46,40 48,48 L48,52 L26,52 Z" />
+
+    <!-- Large Rear Wheel (Agricultural Lug Tire) -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M37,47 A16,16 0 1,0 69,47 A16,16 0 1,0 37,47 Z" />
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M37,47 A13,13 0 1,0 63,47 A13,13 0 1,0 37,47 Z" />
+    <!-- Rear Wheel Rim (Yellow) -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M43,47 A8,8 0 1,0 59,47 A8,8 0 1,0 43,47 Z" />
+    <!-- Rear Axle Hub -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M48,47 A3,3 0 1,0 54,47 A3,3 0 1,0 48,47 Z" />
+
+    <!-- Small Front Wheel -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M67,59 A9,9 0 1,0 85,59 A9,9 0 1,0 67,59 Z" />
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M67,59 A7,7 0 1,0 81,59 A7,7 0 1,0 67,59 Z" />
+    <!-- Front Wheel Rim -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M71,59 A4,4 0 1,0 79,59 A4,4 0 1,0 71,59 Z" />
+    <!-- Front Axle Hub -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M73,59 A1.5,1.5 0 1,0 76,59 A1.5,1.5 0 1,0 73,59 Z" />
+
+    <!-- Ground / Field Line -->
+    <path
+        android:fillColor="#81C784"
+        android:pathData="M20,78 L88,78 L88,81 L20,81 Z" />
+</vector>

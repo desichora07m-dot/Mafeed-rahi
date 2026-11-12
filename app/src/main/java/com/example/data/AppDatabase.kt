@@ -46,7 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tractor_hisab.db"
                 )
-                    .addCallback(DatabaseCallback())
+                    .addCallback(DatabaseCallback(context.applicationContext))
                     .build()
                 INSTANCE = instance
                 instance
@@ -121,12 +121,15 @@ abstract class AppDatabase : RoomDatabase() {
         )
     }
 
-    private class DatabaseCallback : Callback() {
+    private class DatabaseCallback(private val appContext: Context) : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
-            INSTANCE?.let { database ->
-                CoroutineScope(Dispatchers.IO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val database = getDatabase(appContext)
                     populateInitialData(database)
+                } catch (e: Exception) {
+                    android.util.Log.e("AppDatabase", "Error initializing database data", e)
                 }
             }
         }
@@ -134,14 +137,15 @@ abstract class AppDatabase : RoomDatabase() {
 }
 
 suspend fun populateInitialData(database: AppDatabase) {
-    val categoryDao = database.workCategoryDao()
-    val customerDao = database.customerDao()
-    val workEntryDao = database.workEntryDao()
-    val paymentDao = database.paymentTransactionDao()
+    try {
+        val categoryDao = database.workCategoryDao()
+        val customerDao = database.customerDao()
+        val workEntryDao = database.workEntryDao()
+        val paymentDao = database.paymentTransactionDao()
 
-    if (categoryDao.getCount() == 0) {
-        categoryDao.insertAll(AppDatabase.DEFAULT_CATEGORIES)
-    }
+        if (categoryDao.getCount() == 0) {
+            categoryDao.insertAll(AppDatabase.DEFAULT_CATEGORIES)
+        }
 
     // Seed helpful initial customers for immediate usability & demo
     val c1Id = customerDao.insert(Customer(name = "Babulal Patel (बाबूलाल)", phone = "9876543210", village = "Kheda"))
@@ -236,4 +240,7 @@ suspend fun populateInitialData(database: AppDatabase) {
             notes = "Sand delivery to new house site"
         )
     )
+    } catch (e: Exception) {
+        android.util.Log.e("AppDatabase", "Error in populateInitialData", e)
+    }
 }

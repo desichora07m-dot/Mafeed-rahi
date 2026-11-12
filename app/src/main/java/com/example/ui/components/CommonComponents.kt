@@ -139,7 +139,7 @@ fun TractorTopBar(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        painter = painterResource(id = R.drawable.ic_app_logo),
                         contentDescription = "Logo",
                         modifier = Modifier.size(38.dp)
                     )

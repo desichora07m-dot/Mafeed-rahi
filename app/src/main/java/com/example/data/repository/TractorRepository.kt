@@ -15,7 +15,9 @@ import com.example.data.model.RateUnit
 import com.example.data.model.WorkCategory
 import com.example.data.model.WorkEntry
 import com.example.data.populateInitialData
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -31,6 +33,18 @@ class TractorRepository(
     private val workEntryDao: WorkEntryDao = database.workEntryDao(),
     private val paymentDao: PaymentTransactionDao = database.paymentTransactionDao()
 ) {
+    init {
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (categoryDao.getCount() == 0) {
+                    categoryDao.insertAll(AppDatabase.DEFAULT_CATEGORIES)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("TractorRepository", "Error ensuring default categories", e)
+            }
+        }
+    }
+
     val allCustomers: Flow<List<Customer>> = customerDao.getAllCustomers()
     val allCategories: Flow<List<WorkCategory>> = categoryDao.getAllCategories()
     val allWorkEntries: Flow<List<WorkEntry>> = workEntryDao.getAllWorkEntries()
