@@ -1,0 +1,47 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#FBE9E7"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Mitti Karna (मिट्टी काटना) - Heavy Tractor-mounted Dozer Blade & Soil Cutting Implement -->
+    <!-- Heavy Duty Push Arms -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M16,34 L56,44 L54,50 L14,40 Z" />
+    <path
+        android:fillColor="#263238"
+        android:pathData="M24,26 L54,42 L52,46 L22,30 Z" />
+    <!-- Hydraulic Lift Cylinder (Bright Yellow/Chrome) -->
+    <path
+        android:fillColor="#FBC02D"
+        android:pathData="M30,22 L46,26 L44,32 L28,28 Z" />
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M44,27 L58,31 L57,33 L43,29 Z" />
+    <!-- Heavy Curved Steel Dozer / Soil-Cutting Blade (Red/Orange with curve) -->
+    <path
+        android:fillColor="#D84315"
+        android:pathData="M52,30 C64,30 76,42 78,64 L66,66 C64,48 56,38 48,36 Z" />
+    <!-- High-Carbon Reversible Cutting Edge (Bright Steel at bottom) -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M66,64 L80,62 L78,68 L64,70 Z" />
+    <!-- Corner side bit cutters -->
+    <path
+        android:fillColor="#BF360C"
+        android:pathData="M76,44 L84,58 L78,60 L72,48 Z" />
+    <!-- Soil Cutting Action: Mound of soil being sliced and rolled up in front of the blade -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M72,66 C78,54 86,52 88,58 C90,64 88,72 82,74 Z" />
+    <path
+        android:fillColor="#795548"
+        android:pathData="M76,64 C80,56 86,56 87,62 C88,68 84,72 80,72 Z" />
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M8,70 L66,70 L74,74 L90,74 L90,82 L8,82 Z" />
+</vector>

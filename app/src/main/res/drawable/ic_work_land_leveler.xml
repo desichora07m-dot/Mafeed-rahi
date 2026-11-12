@@ -1,0 +1,59 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#E1F5FE"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Laser / Hydraulic Land Leveler Mast Tower -->
+    <path
+        android:fillColor="#FBC02D"
+        android:pathData="M52,14 L56,14 L56,38 L52,38 Z" />
+    <!-- Mast Sensor Receiver on Top (Yellow cylinder) -->
+    <path
+        android:fillColor="#F57F17"
+        android:pathData="M50,12 L58,12 L58,22 L50,22 Z" />
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M52,16 A2,2 0 1,0 56,16 A2,2 0 1,0 52,16 Z" />
+    <!-- Main Tow Beam / Drawbar -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M12,42 L54,38 L54,44 L12,46 Z" />
+    <!-- Tractor Hitch Ring -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M8,44 A4,4 0 1,0 16,44 A4,4 0 1,0 8,44 Z" />
+    <!-- Curved Scraper Bucket Blade (Heavy Blue) -->
+    <path
+        android:fillColor="#0277BD"
+        android:pathData="M38,36 Q62,34 74,40 L72,66 L36,66 Z" />
+    <!-- Side wing cutter plates -->
+    <path
+        android:fillColor="#01579B"
+        android:pathData="M36,40 L34,66 L42,66 L44,40 Z M70,40 L68,66 L76,66 L78,40 Z" />
+    <!-- Cutting Edge (Hardened Chrome Steel Blade) -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M34,64 L76,64 L75,68 L33,68 Z" />
+    <!-- Rear Hydraulic Cylinders -->
+    <path
+        android:fillColor="#C2185B"
+        android:pathData="M60,46 L64,46 L63,60 L59,60 Z" />
+    <!-- Rear Heavy Transport Wheels -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M72,56 A10,10 0 1,0 92,56 A10,10 0 1,0 72,56 Z" />
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M78,56 A4,4 0 1,0 86,56 A4,4 0 1,0 78,56 Z" />
+    <!-- Perfectly Flat Level Earth Line (demonstrating laser leveling) -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M6,72 L90,72 L90,82 L6,82 Z" />
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M6,70 L90,70 L90,72 L6,72 Z" />
+</vector>

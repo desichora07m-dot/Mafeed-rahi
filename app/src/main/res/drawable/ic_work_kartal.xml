@@ -1,0 +1,62 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#FFF3E0"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Kartal / Heavy Disc Harrow Frame -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M16,28 L80,28 L78,34 L18,34 Z" />
+    <path
+        android:fillColor="#0D47A1"
+        android:pathData="M30,20 L66,20 L63,28 L33,28 Z" />
+    <!-- Disc gang axle shaft (slanted gang) -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M14,48 L82,40 L81,44 L13,52 Z" />
+    <!-- Scalloped Steel Discs (Kartal Discs) -->
+    <!-- Disc 1 -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M18,36 C24,36 28,47 28,60 C28,73 24,80 18,80 C15,80 14,73 14,60 C14,47 15,36 18,36 Z" />
+    <path
+        android:fillColor="#CFD8DC"
+        android:pathData="M20,40 C23,40 25,48 25,58 C25,68 23,74 20,74 C18,74 17,68 17,58 C17,48 18,40 20,40 Z" />
+    <!-- Disc 2 -->
+    <path
+        android:fillColor="#546E7A"
+        android:pathData="M32,35 C38,35 42,46 42,59 C42,72 38,79 32,79 C29,79 28,72 28,59 C28,46 29,35 32,35 Z" />
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M34,39 C37,39 39,47 39,57 C39,67 37,73 34,73 C32,73 31,67 31,57 C31,47 32,39 34,39 Z" />
+    <!-- Disc 3 -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M46,34 C52,34 56,45 56,58 C56,71 52,78 46,78 C43,78 42,71 42,58 C42,45 43,34 46,34 Z" />
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M48,38 C51,38 53,46 53,56 C53,66 51,72 48,72 C46,72 45,66 45,56 C45,46 46,38 48,38 Z" />
+    <!-- Disc 4 -->
+    <path
+        android:fillColor="#546E7A"
+        android:pathData="M60,33 C66,33 70,44 70,57 C70,70 66,77 60,77 C57,77 56,70 56,57 C56,44 57,33 60,33 Z" />
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M62,37 C65,37 67,45 67,55 C67,65 65,71 62,71 C60,71 59,65 59,55 C59,45 60,37 62,37 Z" />
+    <!-- Disc 5 -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M74,32 C80,32 84,43 84,56 C84,69 80,76 74,76 C71,76 70,69 70,56 C70,43 71,32 74,32 Z" />
+    <!-- Spacers and center axle bolts -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M16,58 A3,3 0 1,0 22,58 A3,3 0 1,0 16,58 Z M30,57 A3,3 0 1,0 36,57 A3,3 0 1,0 30,57 Z M44,56 A3,3 0 1,0 50,56 A3,3 0 1,0 44,56 Z M58,55 A3,3 0 1,0 64,55 A3,3 0 1,0 58,55 Z M72,54 A3,3 0 1,0 78,54 A3,3 0 1,0 72,54 Z" />
+    <!-- Churned Soil -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M10,77 Q24,73 38,79 T66,78 T86,76 L86,83 L10,83 Z" />
+</vector>

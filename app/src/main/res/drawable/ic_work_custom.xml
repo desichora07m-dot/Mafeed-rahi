@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#E8EAF6"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Custom Work Category Icon (Agricultural Wrench, Gear & Seedling) -->
+    <path
+        android:fillColor="#3949AB"
+        android:pathData="M48,22 C33.64,22 22,33.64 22,48 C22,62.36 33.64,74 48,74 C62.36,74 74,62.36 74,48 C74,33.64 62.36,22 48,22 Z M48,68 C36.95,68 28,59.05 28,48 C28,36.95 36.95,28 48,28 C59.05,28 70,36.95 70,48 C70,59.05 59.05,68 48,68 Z" />
+    <!-- Large Plus Sign / Custom Add -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M45,34 L51,34 L51,45 L62,45 L62,51 L51,51 L51,62 L45,62 L45,51 L34,51 L34,45 L45,45 Z" />
+    <!-- Small Green Sprout badge -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M60,20 C64,20 68,24 68,28 C62,28 60,24 60,20 Z" />
+</vector>

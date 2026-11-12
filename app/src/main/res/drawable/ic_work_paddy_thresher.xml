@@ -1,0 +1,55 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#F1F8E9"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Thresher Main Drum Housing (Green Agricultural Body) -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M24,34 L72,34 L70,68 L22,68 Z" />
+    <!-- Paddy Feeding Hopper / Funnel (Large angled chute) -->
+    <path
+        android:fillColor="#388E3C"
+        android:pathData="M16,18 L38,18 L34,34 L20,34 Z" />
+    <path
+        android:fillColor="#81C784"
+        android:pathData="M18,20 L36,20 L33,32 L22,32 Z" />
+    <!-- Straw / Bhusa Blower Chute (High angled pipe on right) -->
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M64,34 L78,16 L84,20 L72,40 Z" />
+    <!-- Golden Paddy Straw flying from blower -->
+    <path
+        android:fillColor="#FDD835"
+        android:pathData="M82,14 Q88,10 92,15 Q86,22 80,18 Z" />
+    <path
+        android:fillColor="#FFEE58"
+        android:pathData="M86,16 Q92,13 94,18 Q88,23 84,20 Z" />
+    <!-- Grain Output Chute & Tray at Bottom -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M44,66 L56,66 L58,74 L42,74 Z" />
+    <!-- Clean Golden Rice / Paddy Grains pouring -->
+    <path
+        android:fillColor="#FBC02D"
+        android:pathData="M46,74 L54,74 L56,82 L44,82 Z" />
+    <!-- Tractor PTO Pulley & Drive Belts on side -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M24,52 A7,7 0 1,0 38,52 A7,7 0 1,0 24,52 Z" />
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M28,52 A3,3 0 1,0 34,52 A3,3 0 1,0 28,52 Z" />
+    <!-- Support Legs / Base Frame -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M20,68 L24,68 L24,80 L20,80 Z M68,68 L72,68 L72,80 L68,80 Z" />
+    <!-- Paddy stalks on hopper -->
+    <path
+        android:fillColor="#C0CA33"
+        android:pathData="M24,14 L28,24 L26,24 L22,14 Z M30,12 L33,24 L31,24 L28,12 Z" />
+</vector>

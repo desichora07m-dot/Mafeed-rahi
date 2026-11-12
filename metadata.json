@@ -1,0 +1,6 @@
+{
+  "name": "Tractor Hisab",
+  "description": "Complete offline tractor work management & accounting app for Indian tractor owners and operators",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

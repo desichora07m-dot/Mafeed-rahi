@@ -1,0 +1,73 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#E8F5E9"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Cultivator Main Frame (Red Heavy Duty Steel) -->
+    <path
+        android:fillColor="#C62828"
+        android:pathData="M16,34 L80,34 L78,40 L18,40 Z" />
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M24,24 L28,34 L68,34 L72,24 L66,24 L63,30 L33,30 L30,24 Z" />
+    <!-- 3-point hitch top link -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M45,18 L51,18 L49,30 L47,30 Z" />
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M44,17 A4,4 0 1,0 52,17 A4,4 0 1,0 44,17 Z" />
+    <!-- Cultivator Curved Spring Shines/Tines (5 visible curved tines) -->
+    <!-- Tine 1 -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M22,40 C22,50 18,58 14,64 L18,66 C23,60 27,51 27,40 Z" />
+    <!-- Shovel / Sweep Tip 1 -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M11,62 L20,68 L15,70 L9,64 Z" />
+    <!-- Tine 2 -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M34,40 C34,53 29,61 25,67 L29,69 C34,62 39,52 39,40 Z" />
+    <!-- Shovel / Sweep Tip 2 -->
+    <path
+        android:fillColor="#CFD8DC"
+        android:pathData="M22,65 L31,71 L26,73 L20,67 Z" />
+    <!-- Tine 3 (Center) -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M46,40 C46,55 42,65 38,72 L42,74 C47,66 51,54 51,40 Z" />
+    <!-- Shovel / Sweep Tip 3 -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M35,70 L44,76 L39,78 L33,72 Z" />
+    <!-- Tine 4 -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M59,40 C59,53 54,61 50,67 L54,69 C59,62 64,52 64,40 Z" />
+    <!-- Shovel / Sweep Tip 4 -->
+    <path
+        android:fillColor="#CFD8DC"
+        android:pathData="M47,65 L56,71 L51,73 L45,67 Z" />
+    <!-- Tine 5 -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M72,40 C72,50 68,58 64,64 L68,66 C73,60 77,51 77,40 Z" />
+    <!-- Shovel / Sweep Tip 5 -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M61,62 L70,68 L65,70 L59,64 Z" />
+    <!-- Spring coils on frame -->
+    <path
+        android:fillColor="#FF8F00"
+        android:pathData="M20,32 A3,3 0 1,0 26,32 A3,3 0 1,0 20,32 Z M32,32 A3,3 0 1,0 38,32 A3,3 0 1,0 32,32 Z M44,32 A3,3 0 1,0 50,32 A3,3 0 1,0 44,32 Z M57,32 A3,3 0 1,0 63,32 A3,3 0 1,0 57,32 Z M70,32 A3,3 0 1,0 76,32 A3,3 0 1,0 70,32 Z" />
+    <!-- Furrow soil wave at bottom -->
+    <path
+        android:fillColor="#795548"
+        android:pathData="M8,76 Q20,72 32,77 T56,77 T80,75 L84,82 L8,82 Z" />
+</vector>

@@ -1,0 +1,51 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#FFFDE7"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Maize Thresher Body (Heavy Red / Orange Industrial Casing) -->
+    <path
+        android:fillColor="#D84315"
+        android:pathData="M22,32 L74,32 L72,66 L20,66 Z" />
+    <!-- Maize / Corn Cob Hopper (Wide top tray) -->
+    <path
+        android:fillColor="#BF360C"
+        android:pathData="M24,18 L68,18 L62,32 L30,32 Z" />
+    <!-- Corn Cob (Bhutta) inside hopper -->
+    <path
+        android:fillColor="#FDD835"
+        android:pathData="M38,14 C44,14 48,18 48,24 C48,26 42,26 38,26 C34,26 32,22 34,16 Z" />
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M32,18 C30,22 34,26 36,28 C34,26 32,24 32,18 Z" />
+    <!-- Corn Cob 2 -->
+    <path
+        android:fillColor="#FBC02D"
+        android:pathData="M50,14 C56,14 60,18 60,24 C60,26 54,26 50,26 C46,26 44,22 46,16 Z" />
+    <!-- De-husking Drum Access Hatch with warning stripes -->
+    <path
+        android:fillColor="#FF8F00"
+        android:pathData="M28,38 L66,38 L65,52 L27,52 Z" />
+    <!-- Kernel Separator Blower Chute -->
+    <path
+        android:fillColor="#BF360C"
+        android:pathData="M66,34 L82,24 L86,28 L72,42 Z" />
+    <!-- Yellow Maize Kernels coming out -->
+    <path
+        android:fillColor="#FFD600"
+        android:pathData="M44,66 L52,66 L54,76 L42,76 Z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M43,76 A2.5,2.5 0 1,0 48,76 A2.5,2.5 0 1,0 43,76 Z M50,77 A2.5,2.5 0 1,0 55,77 A2.5,2.5 0 1,0 50,77 Z M46,80 A3,3 0 1,0 52,80 A3,3 0 1,0 46,80 Z" />
+    <!-- Heavy Duty Base Wheel and axle -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M22,66 A8,8 0 1,0 38,66 A8,8 0 1,0 22,66 Z M60,66 A8,8 0 1,0 76,66 A8,8 0 1,0 60,66 Z" />
+    <path
+        android:fillColor="#CFD8DC"
+        android:pathData="M27,66 A3,3 0 1,0 33,66 A3,3 0 1,0 27,66 Z M65,66 A3,3 0 1,0 71,66 A3,3 0 1,0 65,66 Z" />
+</vector>

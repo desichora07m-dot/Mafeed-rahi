@@ -1,0 +1,60 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background Card Circle -->
+    <path
+        android:fillColor="#EDE7F6"
+        android:pathData="M48,6 C71.196,6 90,24.804 90,48 C90,71.196 71.196,90 48,90 C24.804,90 6,71.196 6,48 C6,24.804 24.804,6 48,6 Z" />
+    <!-- Tractor Trolley High-Sided Steel Body (Classic Red Indian Farm Trolley) -->
+    <path
+        android:fillColor="#C62828"
+        android:pathData="M24,28 L86,28 L84,56 L22,56 Z" />
+    <!-- Yellow decorative paint trim on trolley body -->
+    <path
+        android:fillColor="#FDD835"
+        android:pathData="M24,38 L86,38 L86,42 L24,42 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,46 L86,46 L86,48 L24,48 Z" />
+    <!-- Vertical support ribs -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M38,28 L42,28 L42,56 L38,56 Z M54,28 L58,28 L58,56 L54,56 Z M70,28 L74,28 L74,56 L70,56 Z" />
+    <!-- Cargo mound (Grain / Sand / Sugarcane mound over top) -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M26,28 Q54,16 84,28 Z" />
+    <!-- Heavy Duty Chassis Underframe -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M16,56 L86,56 L86,60 L16,60 Z" />
+    <!-- Trolley Drawbar / Tow Hitch (connecting towards left) -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M8,54 L24,56 L24,60 L8,58 Z" />
+    <!-- Hitch Eye Pin (Yellow) -->
+    <path
+        android:fillColor="#FFD600"
+        android:pathData="M6,54 A3,3 0 1,0 12,54 A3,3 0 1,0 6,54 Z" />
+    <!-- Double Rear Heavy Wheels (Lug tires) -->
+    <!-- Front Wheel of Tandem -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M44,60 A11,11 0 1,0 66,60 A11,11 0 1,0 44,60 Z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M51,60 A4,4 0 1,0 59,60 A4,4 0 1,0 51,60 Z" />
+    <!-- Rear Wheel of Tandem -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M64,60 A11,11 0 1,0 86,60 A11,11 0 1,0 64,60 Z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M71,60 A4,4 0 1,0 79,60 A4,4 0 1,0 71,60 Z" />
+    <!-- Road Surface -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M6,72 L90,72 L90,75 L6,75 Z" />
+</vector>
